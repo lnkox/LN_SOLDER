@@ -56,7 +56,7 @@ return ADCW;
 
 int get_solder_temp(void)
 {
- int adc_t=read_adc(6);            
+ long adc_t=read_adc(6);            
  printf("adc_t= %i\r\n", adc_t);
  printf("solder11= %i\r\n", (adc_t*53)/1000-57);  
  return (adc_t-107)/2;
@@ -176,7 +176,7 @@ while (1)
       {
       // Place your code here
       printf("solder= %i\r\n", get_solder_temp());  
-      OCR1AL++;  
+        
       delay_ms(1000);
       }
 }

@@ -1,0 +1,23 @@
+RAM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+
+EEPROM Allocation [bytes]
+Variable                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+
+Register Allocation
+Variable                                                                          Register  Size
+------------------------------------------------------------------------------------------------
+
+FLASH Allocation [words]
+Function                                                          Address   Size
+--------------------------------------------------------------------------------
+timer0_ovf_isr                                                    0x0004A      1
+main                                                              0x00078     66
+putchar                                                           0x000BA      7
+put_usart_G100                                                    0x000C1     12
+_print_G100                                                       0x000CD    279
+printf                                                            0x001E4     30
+strlen                                                            0x00202     11
+strlenf                                                           0x0020D     12
