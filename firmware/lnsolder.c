@@ -20,16 +20,106 @@ Memory model            : Small
 External RAM size       : 0
 Data Stack size         : 256
 *******************************************************/
+flash unsigned char solder_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
+0X00,0X00,0X00,0X01,0X00,0X00,0X00,0X0A,0X00,0X00,0X00,0X1C,0X00,0X00,0X00,0X3E,
+0X00,0X00,0X00,0X7C,0X00,0X00,0X00,0XF8,0X00,0X00,0X01,0XF0,0X00,0X00,0X03,0XE0,
+0X00,0X00,0X07,0XC0,0X00,0X00,0X0F,0X80,0X00,0X00,0X7F,0X00,0X00,0X00,0XBE,0X00,
+0X00,0X01,0X7C,0X00,0X00,0X01,0XFC,0X00,0X00,0X01,0XF4,0X00,0X00,0X02,0XE8,0X00,
+0X00,0X04,0X70,0X00,0X00,0X08,0X80,0X00,0X00,0X11,0X00,0X00,0X00,0X22,0X00,0X00,
+0X00,0X44,0X00,0X00,0X00,0X88,0X00,0X00,0X01,0X10,0X00,0X00,0X02,0X20,0X00,0X00,
+0X04,0X40,0X00,0X00,0X08,0X80,0X00,0X00,0X11,0X00,0X00,0X00,0X0A,0X00,0X00,0X00,
+0X14,0X00,0X00,0X00,0X20,0X00,0X00,0X00,0X40,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+};
+flash unsigned char fan_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
+0X00,0X03,0XF0,0X00,0X00,0X07,0XFC,0X00,0X00,0X0F,0XFE,0X00,0X00,0X1F,0XFE,0X00,
+0X00,0X1F,0XFE,0X00,0X00,0X1F,0XFE,0X00,0X00,0X1F,0XFC,0X00,0X00,0X1F,0XF8,0X00,
+0X00,0X1F,0XF0,0X00,0X3C,0X0F,0XE0,0X00,0X7E,0X0F,0XE0,0X00,0X7F,0X07,0XC1,0XF8,
+0XFF,0X84,0X27,0XFC,0XFF,0XE8,0X1F,0XFE,0XFF,0XF1,0X8F,0XFF,0XFF,0XF3,0XCF,0XFF,
+0XFF,0XF3,0XCF,0XFF,0XFF,0XF1,0X8F,0XFF,0X7F,0XF8,0X17,0XFF,0X3F,0XE4,0X21,0XFF,
+0X1F,0X83,0XE0,0XFE,0X00,0X07,0XF0,0X7E,0X00,0X07,0XF0,0X3C,0X00,0X0F,0XF8,0X00,
+0X00,0X1F,0XF8,0X00,0X00,0X3F,0XF8,0X00,0X00,0X7F,0XF8,0X00,0X00,0X7F,0XF8,0X00,
+0X00,0X7F,0XF8,0X00,0X00,0X7F,0XF0,0X00,0X00,0X3F,0XE0,0X00,0X00,0X0F,0XC0,0X00,
+};
+
+
+flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+0X07,0XF0,0X00,0X00,0X1F,0XFF,0XF0,0X00,0X1F,0XFF,0XFE,0X00,0X38,0X3F,0XFE,0XFE,
+0X38,0X3F,0XFE,0X00,0X78,0X3F,0XFE,0XFE,0X78,0X3F,0XFE,0X00,0X38,0X3F,0XFE,0XFE,
+0X38,0X3F,0XFE,0X00,0X1F,0XFF,0XF8,0X00,0X1F,0XFF,0XC0,0X00,0X07,0XFE,0X00,0X00,
+0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,
+0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,
+0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X07,0XF0,0X00,0X00,0X00,0X00,0X00,0X00,
+0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
+};
+
 
 #include <mega8.h>
 
 #include <delay.h>
+#include <stdlib.h>
+#include <LPH9157-2.h>
 
 // Declare your global variables here
 
 // Standard Input/Output functions
 #include <stdio.h>
 
+void draw_2bit_image(char x, char y, char width, char height,int color,int bg, flash char *img)
+{
+  char xc,yc,dn=0;
+  for(yc=y; yc<(y+height); yc++)
+  {  
+   for(xc=x; xc<x+width; )
+   { 
+   char buffer [5];  
+    if ((img[dn] & 0B10000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}  
+    if ((img[dn] & 0B01000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);} 
+    if ((img[dn] & 0B00100000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}   
+    if ((img[dn] & 0B00010000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);} 
+    if ((img[dn] & 0B00001000))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}     
+    if ((img[dn] & 0B00000100))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);} 
+    if ((img[dn] & 0B00000010))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}   
+    if ((img[dn] & 0B00000001))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);} 
+    dn++;
+   }
+  }
+}
+void set_sold_cur_temp(int temp)
+{
+    char buf[3];
+    itoa(temp,buf);
+    LCD_Puts(buf,50,10,GREEN,WHITE,3,3);
+}
+
+void set_sold_temp(int temp)
+{
+    char buf[3];
+    itoa(temp,buf);
+    LCD_Puts(buf,120,10,RED,WHITE,3,3);
+}
+
+void set_air_cur_temp(int temp)
+{
+    char buf[3];
+    itoa(temp,buf);
+    LCD_Puts(buf,50,50,GREEN,WHITE,3,3);
+}
+
+void set_air_temp(int temp)
+{
+    char buf[3];
+    itoa(temp,buf);
+    LCD_Puts(buf,120,50,RED,WHITE,3,3);
+}
+void set_fan(int fan)
+{
+    char buf[4];
+    itoa(fan,buf);  
+    buf[3]='%';  
+    buf[4]=0;
+    LCD_Puts(buf,50,90,RED,WHITE,3,3);
+}
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 {
@@ -79,8 +169,8 @@ DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (0<<DDC2) | (0<<DDC1) | (0<
 PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 
 // Port D initialization
-// Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In 
-DDRD=(0<<DDD7) | (0<<DDD6) | (0<<DDD5) | (0<<DDD4) | (0<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
+// Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=In Bit1=In Bit0=In 
+DDRD=(1<<DDD7) | (1<<DDD6) | (1<<DDD5) | (1<<DDD4) | (1<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T 
 PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
 
@@ -171,13 +261,33 @@ TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 
 // Global enable interrupts
 #asm("sei")
-
+      LCD_init(); 
+      SetRotation(90);  
+      LCD_Puts(" LNSOLDER ",0,50,WHITE,BLACK,3,3); 
+      delay_ms(1000); 
+          LCD_FillScreen(WHITE);   
+  
+           draw_2bit_image (0,5,32,32,BLUE,WHITE,solder_img);
+           LCD_DrawLine(0,40,175,40,BLACK);
+           draw_2bit_image (0,45,32,32,BLUE,WHITE,hotair_img);
+           LCD_DrawLine(0,80,175,80,BLACK);
+           draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);  
+           LCD_DrawLine(0,120,175,120,BLACK); 
+           LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);    
+           
+           
+           
+           set_sold_cur_temp(480); 
+            set_sold_temp(480);         
+            
+           set_air_cur_temp(480); 
+            set_air_temp(480);  
+             set_fan(100);
 while (1)
+
       {
-      // Place your code here
-      printf("solder= %i\r\n", get_solder_temp());  
-      OCR1AL++;  
-      delay_ms(1000);
+      // Place your code here   
+
       }
 }
 

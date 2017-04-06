@@ -1,6 +1,7 @@
 RAM Allocation [bytes]
 Variable                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
+_seed                                                                             0x0189       4
 
 EEPROM Allocation [bytes]
 Variable                                                                          Address   Size
@@ -9,15 +10,29 @@ Variable                                                                        
 Register Allocation
 Variable                                                                          Register  Size
 ------------------------------------------------------------------------------------------------
+rot                                                                               R4,R5        2
+RS_old                                                                            R7           1
 
 FLASH Allocation [words]
-Function                                                          Address   Size
---------------------------------------------------------------------------------
-timer0_ovf_isr                                                    0x0004A      1
-main                                                              0x00078     66
-putchar                                                           0x000BA      7
-put_usart_G100                                                    0x000C1     12
-_print_G100                                                       0x000CD    279
-printf                                                            0x001E4     30
-strlen                                                            0x00202     11
-strlenf                                                           0x0020D     12
+Function                                                                          Address   Size
+------------------------------------------------------------------------------------------------
+Send_spi                                                                          0x002CE     45
+Send_to_lcd                                                                       0x002FB     23
+LCD_init                                                                          0x00312     26
+SetRotation                                                                       0x0032C     29
+SetArea                                                                           0x00349     17
+Put_Pixel                                                                         0x0035A     16
+Send_Symbol                                                                       0x0036A    128
+LCD_Putchar                                                                       0x003EA     31
+LCD_Puts                                                                          0x00409     36
+LCD_FillScreen                                                                    0x0042D     26
+LCD_DrawLine                                                                      0x00447    172
+draw_2bit_image                                                                   0x004F3    112
+set_sold_cur_temp                                                                 0x00563      8
+set_sold_temp                                                                     0x0056B      7
+set_air_cur_temp                                                                  0x00572      6
+set_air_temp                                                                      0x00578     15
+set_fan                                                                           0x00587     24
+timer0_ovf_isr                                                                    0x0059F      1
+main                                                                              0x005A0    142
+itoa                                                                              0x0062E     45
