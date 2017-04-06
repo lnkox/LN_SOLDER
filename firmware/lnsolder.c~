@@ -72,7 +72,6 @@ void draw_2bit_image(char x, char y, char width, char height,int color,int bg, f
   {  
    for(xc=x; xc<x+width; )
    { 
-   char buffer [5];  
     if ((img[dn] & 0B10000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}  
     if ((img[dn] & 0B01000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);} 
     if ((img[dn] & 0B00100000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}   
@@ -87,38 +86,36 @@ void draw_2bit_image(char x, char y, char width, char height,int color,int bg, f
 }
 void set_sold_cur_temp(int temp)
 {
-    char buf[3];
-    itoa(temp,buf);
+    char buf[5];
+    sprintf( buf,"%i  ",temp); 
     LCD_Puts(buf,50,10,GREEN,WHITE,3,3);
 }
 
 void set_sold_temp(int temp)
 {
-    char buf[3];
-    itoa(temp,buf);
+    char buf[5];
+    sprintf( buf,"%i  ",temp ); 
     LCD_Puts(buf,120,10,RED,WHITE,3,3);
 }
 
 void set_air_cur_temp(int temp)
 {
-    char buf[3];
-    itoa(temp,buf);
+    char buf[5];
+    sprintf( buf,"%i  ",temp ); 
     LCD_Puts(buf,50,50,GREEN,WHITE,3,3);
 }
 
 void set_air_temp(int temp)
 {
-    char buf[3];
-    itoa(temp,buf);
+    char buf[5];
+    sprintf( buf,"%i  ",temp); 
     LCD_Puts(buf,120,50,RED,WHITE,3,3);
 }
 void set_fan(int fan)
 {
     char buf[4];
-    itoa(fan,buf);  
-    buf[3]='%';  
-    buf[4]=0;
-    LCD_Puts(buf,50,90,RED,WHITE,3,3);
+    sprintf( buf,"%i%%",fan ); 
+    LCD_Puts(buf,50,90,BLACK,WHITE,3,3);
 }
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
@@ -282,12 +279,14 @@ TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
             
            set_air_cur_temp(480); 
             set_air_temp(480);  
-             set_fan(480);
+             set_fan(5);
 while (1)
 
       {
       // Place your code here   
-
+       set_sold_temp(read_adc(6));   
+        set_sold_cur_temp(read_adc(2));   
+        delay_ms(300);
       }
 }
 
