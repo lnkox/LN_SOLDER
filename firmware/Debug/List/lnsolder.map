@@ -1,7 +1,9 @@
 RAM Allocation [bytes]
 Variable                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
-_seed                                                                             0x0189       4
+air_set                                                                           0x0189       2
+fan_set                                                                           0x018B       2
+_seed                                                                             0x018D       4
 
 EEPROM Allocation [bytes]
 Variable                                                                          Address   Size
@@ -12,32 +14,37 @@ Variable                                                                        
 ------------------------------------------------------------------------------------------------
 rot                                                                               R4,R5        2
 RS_old                                                                            R7           1
+solder_cur                                                                        R8,R9        2
+air_cur                                                                           R10,R11      2
+solder_set                                                                        R12,R13      2
 
 FLASH Allocation [words]
 Function                                                                          Address   Size
 ------------------------------------------------------------------------------------------------
-Send_spi                                                                          0x002D5     44
-Send_to_lcd                                                                       0x00301     23
-LCD_init                                                                          0x00318     26
-SetRotation                                                                       0x00332     29
-SetArea                                                                           0x0034F     17
-Put_Pixel                                                                         0x00360     16
-Send_Symbol                                                                       0x00370    127
-LCD_Putchar                                                                       0x003EF     31
-LCD_Puts                                                                          0x0040E     36
-LCD_FillScreen                                                                    0x00432     26
-LCD_DrawLine                                                                      0x0044C    169
-draw_2bit_image                                                                   0x004F5    110
-set_sold_cur_temp                                                                 0x00563      8
-set_sold_temp                                                                     0x0056B      5
-set_air_cur_temp                                                                  0x00570      7
-set_air_temp                                                                      0x00577     12
-set_fan                                                                           0x00583     24
-timer0_ovf_isr                                                                    0x0059B      1
-read_adc                                                                          0x0059C     14
-main                                                                              0x005AA    155
-put_buff_G101                                                                     0x00645     44
-_print_G101                                                                       0x00671    274
-sprintf                                                                           0x00783     41
-strlen                                                                            0x007AC     11
-strlenf                                                                           0x007B7     12
+Send_spi                                                                          0x002CB     44
+Send_to_lcd                                                                       0x002F7     23
+LCD_init                                                                          0x0030E     26
+SetRotation                                                                       0x00328     29
+SetArea                                                                           0x00345     17
+Put_Pixel                                                                         0x00356     16
+Send_Symbol                                                                       0x00366    127
+LCD_Putchar                                                                       0x003E5     31
+LCD_Puts                                                                          0x00404     36
+LCD_FillScreen                                                                    0x00428     26
+LCD_DrawLine                                                                      0x00442    169
+map                                                                               0x004EB     47
+draw_2bit_image                                                                   0x0051A    110
+set_sold_cur_temp                                                                 0x00588      5
+set_sold_temp                                                                     0x0058D     15
+set_air_cur_temp                                                                  0x0059C      5
+set_air_temp                                                                      0x005A1     11
+set_fan                                                                           0x005AC     24
+get_all_input                                                                     0x005C4     35
+timer0_ovf_isr                                                                    0x005E7      1
+read_adc                                                                          0x005E8     14
+main                                                                              0x005F6    165
+put_buff_G101                                                                     0x0069B     44
+_print_G101                                                                       0x006C7    274
+sprintf                                                                           0x007D9     41
+strlen                                                                            0x00802     11
+strlenf                                                                           0x0080D     12

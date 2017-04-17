@@ -53,6 +53,14 @@
 ;0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
 ;};
 ;
+;#define solder_TC 6
+;#define air_TC 7
+;#define solder_RR 0
+;#define air_RR 1
+;#define fan_RR 2
+;#define solder_but PINC.3
+;#define air_but  PINC.4
+;#define air_ger  PINC.5
 ;
 ;#include <mega8.h>
 ;PCODE: $00000000 VOL: 0
@@ -272,7 +280,7 @@
 ;//			        Программный SPI
 ;//===============================================================
 ;void Send_spi(unsigned char data)
-; 0000 003D {
+; 0000 0045 {
 
 	.CSEG
 ;PCODE: $0000000D VOL: 0
@@ -4231,30 +4239,29 @@
 ;
 ;//===============================================================
 ;#endif //_GEOMETRICAL
-;
-;// Declare your global variables here
-;
-;// Standard Input/Output functions
 ;#include <stdio.h>
 ;
-;void draw_2bit_image(char x, char y, char width, char height,int color,int bg, flash char *img)
-; 0000 0045 {
+;
+;unsigned int read_adc(unsigned char adc_input);
+;
+;int solder_cur=0;
+;int air_cur=0;
+;int solder_set=0;
+;int air_set=0;
+;int fan_set=0;
+;
+;long map(long x, long in_min, long in_max, long out_min, long out_max)
+; 0000 0052 {
 ;PCODE: $00000B1C VOL: 0
 ;PCODE: $00000B1D VOL: 0
-; 0000 0046   char xc,yc,dn=0;
-; 0000 0047   for(yc=y; yc<(y+height); yc++)
+; 0000 0053   return (((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)/5)*5;
 ;PCODE: $00000B1E VOL: 0
+;	x -> Y+16
+;	in_min -> Y+12
+;	in_max -> Y+8
+;	out_min -> Y+4
+;	out_max -> Y+0
 ;PCODE: $00000B1F VOL: 0
-;	x -> Y+13
-;	y -> Y+12
-;	width -> Y+11
-;	height -> Y+10
-;	color -> Y+8
-;	bg -> Y+6
-;	*img -> Y+4
-;	xc -> R17
-;	yc -> R16
-;	dn -> R19
 ;PCODE: $00000B20 VOL: 0
 ;PCODE: $00000B21 VOL: 0
 ;PCODE: $00000B22 VOL: 0
@@ -4272,23 +4279,34 @@
 ;PCODE: $00000B2E VOL: 0
 ;PCODE: $00000B2F VOL: 0
 ;PCODE: $00000B30 VOL: 0
-; 0000 0048   {
-; 0000 0049    for(xc=x; xc<x+width; )
 ;PCODE: $00000B31 VOL: 0
 ;PCODE: $00000B32 VOL: 0
 ;PCODE: $00000B33 VOL: 0
 ;PCODE: $00000B34 VOL: 0
 ;PCODE: $00000B35 VOL: 0
+; 0000 0054 }
 ;PCODE: $00000B36 VOL: 0
+;void draw_2bit_image(char x, char y, char width, char height,int color,int bg, flash char *img)
+; 0000 0056 {
 ;PCODE: $00000B37 VOL: 0
 ;PCODE: $00000B38 VOL: 0
+; 0000 0057   char xc,yc,dn=0;
+; 0000 0058   for(yc=y; yc<(y+height); yc++)
 ;PCODE: $00000B39 VOL: 0
 ;PCODE: $00000B3A VOL: 0
+;	x -> Y+13
+;	y -> Y+12
+;	width -> Y+11
+;	height -> Y+10
+;	color -> Y+8
+;	bg -> Y+6
+;	*img -> Y+4
+;	xc -> R17
+;	yc -> R16
+;	dn -> R19
 ;PCODE: $00000B3B VOL: 0
 ;PCODE: $00000B3C VOL: 0
 ;PCODE: $00000B3D VOL: 0
-; 0000 004A    {
-; 0000 004B     if ((img[dn] & 0B10000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B3E VOL: 0
 ;PCODE: $00000B3F VOL: 0
 ;PCODE: $00000B40 VOL: 0
@@ -4303,13 +4321,14 @@
 ;PCODE: $00000B49 VOL: 0
 ;PCODE: $00000B4A VOL: 0
 ;PCODE: $00000B4B VOL: 0
+; 0000 0059   {
+; 0000 005A    for(xc=x; xc<x+width; )
 ;PCODE: $00000B4C VOL: 0
 ;PCODE: $00000B4D VOL: 0
 ;PCODE: $00000B4E VOL: 0
 ;PCODE: $00000B4F VOL: 0
 ;PCODE: $00000B50 VOL: 0
 ;PCODE: $00000B51 VOL: 0
-; 0000 004C     if ((img[dn] & 0B01000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B52 VOL: 0
 ;PCODE: $00000B53 VOL: 0
 ;PCODE: $00000B54 VOL: 0
@@ -4317,6 +4336,8 @@
 ;PCODE: $00000B56 VOL: 0
 ;PCODE: $00000B57 VOL: 0
 ;PCODE: $00000B58 VOL: 0
+; 0000 005B    {
+; 0000 005C     if ((img[dn] & 0B10000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B59 VOL: 0
 ;PCODE: $00000B5A VOL: 0
 ;PCODE: $00000B5B VOL: 0
@@ -4330,7 +4351,6 @@
 ;PCODE: $00000B63 VOL: 0
 ;PCODE: $00000B64 VOL: 0
 ;PCODE: $00000B65 VOL: 0
-; 0000 004D     if ((img[dn] & 0B00100000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B66 VOL: 0
 ;PCODE: $00000B67 VOL: 0
 ;PCODE: $00000B68 VOL: 0
@@ -4338,6 +4358,7 @@
 ;PCODE: $00000B6A VOL: 0
 ;PCODE: $00000B6B VOL: 0
 ;PCODE: $00000B6C VOL: 0
+; 0000 005D     if ((img[dn] & 0B01000000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B6D VOL: 0
 ;PCODE: $00000B6E VOL: 0
 ;PCODE: $00000B6F VOL: 0
@@ -4351,7 +4372,6 @@
 ;PCODE: $00000B77 VOL: 0
 ;PCODE: $00000B78 VOL: 0
 ;PCODE: $00000B79 VOL: 0
-; 0000 004E     if ((img[dn] & 0B00010000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B7A VOL: 0
 ;PCODE: $00000B7B VOL: 0
 ;PCODE: $00000B7C VOL: 0
@@ -4359,6 +4379,7 @@
 ;PCODE: $00000B7E VOL: 0
 ;PCODE: $00000B7F VOL: 0
 ;PCODE: $00000B80 VOL: 0
+; 0000 005E     if ((img[dn] & 0B00100000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B81 VOL: 0
 ;PCODE: $00000B82 VOL: 0
 ;PCODE: $00000B83 VOL: 0
@@ -4372,7 +4393,6 @@
 ;PCODE: $00000B8B VOL: 0
 ;PCODE: $00000B8C VOL: 0
 ;PCODE: $00000B8D VOL: 0
-; 0000 004F     if ((img[dn] & 0B00001000))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B8E VOL: 0
 ;PCODE: $00000B8F VOL: 0
 ;PCODE: $00000B90 VOL: 0
@@ -4380,6 +4400,7 @@
 ;PCODE: $00000B92 VOL: 0
 ;PCODE: $00000B93 VOL: 0
 ;PCODE: $00000B94 VOL: 0
+; 0000 005F     if ((img[dn] & 0B00010000)) {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000B95 VOL: 0
 ;PCODE: $00000B96 VOL: 0
 ;PCODE: $00000B97 VOL: 0
@@ -4393,7 +4414,6 @@
 ;PCODE: $00000B9F VOL: 0
 ;PCODE: $00000BA0 VOL: 0
 ;PCODE: $00000BA1 VOL: 0
-; 0000 0050     if ((img[dn] & 0B00000100))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BA2 VOL: 0
 ;PCODE: $00000BA3 VOL: 0
 ;PCODE: $00000BA4 VOL: 0
@@ -4401,6 +4421,7 @@
 ;PCODE: $00000BA6 VOL: 0
 ;PCODE: $00000BA7 VOL: 0
 ;PCODE: $00000BA8 VOL: 0
+; 0000 0060     if ((img[dn] & 0B00001000))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BA9 VOL: 0
 ;PCODE: $00000BAA VOL: 0
 ;PCODE: $00000BAB VOL: 0
@@ -4414,7 +4435,6 @@
 ;PCODE: $00000BB3 VOL: 0
 ;PCODE: $00000BB4 VOL: 0
 ;PCODE: $00000BB5 VOL: 0
-; 0000 0051     if ((img[dn] & 0B00000010))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BB6 VOL: 0
 ;PCODE: $00000BB7 VOL: 0
 ;PCODE: $00000BB8 VOL: 0
@@ -4422,6 +4442,7 @@
 ;PCODE: $00000BBA VOL: 0
 ;PCODE: $00000BBB VOL: 0
 ;PCODE: $00000BBC VOL: 0
+; 0000 0061     if ((img[dn] & 0B00000100))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BBD VOL: 0
 ;PCODE: $00000BBE VOL: 0
 ;PCODE: $00000BBF VOL: 0
@@ -4435,7 +4456,6 @@
 ;PCODE: $00000BC7 VOL: 0
 ;PCODE: $00000BC8 VOL: 0
 ;PCODE: $00000BC9 VOL: 0
-; 0000 0052     if ((img[dn] & 0B00000001))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BCA VOL: 0
 ;PCODE: $00000BCB VOL: 0
 ;PCODE: $00000BCC VOL: 0
@@ -4443,6 +4463,7 @@
 ;PCODE: $00000BCE VOL: 0
 ;PCODE: $00000BCF VOL: 0
 ;PCODE: $00000BD0 VOL: 0
+; 0000 0062     if ((img[dn] & 0B00000010))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BD1 VOL: 0
 ;PCODE: $00000BD2 VOL: 0
 ;PCODE: $00000BD3 VOL: 0
@@ -4456,34 +4477,25 @@
 ;PCODE: $00000BDB VOL: 0
 ;PCODE: $00000BDC VOL: 0
 ;PCODE: $00000BDD VOL: 0
-; 0000 0053     dn++;
 ;PCODE: $00000BDE VOL: 0
 ;PCODE: $00000BDF VOL: 0
-; 0000 0054    }
 ;PCODE: $00000BE0 VOL: 0
 ;PCODE: $00000BE1 VOL: 0
 ;PCODE: $00000BE2 VOL: 0
-; 0000 0055   }
 ;PCODE: $00000BE3 VOL: 0
 ;PCODE: $00000BE4 VOL: 0
+; 0000 0063     if ((img[dn] & 0B00000001))  {Put_Pixel(yc,xc++,color);} else {Put_Pixel(yc,xc++,bg);}
 ;PCODE: $00000BE5 VOL: 0
 ;PCODE: $00000BE6 VOL: 0
 ;PCODE: $00000BE7 VOL: 0
-; 0000 0056 }
 ;PCODE: $00000BE8 VOL: 0
 ;PCODE: $00000BE9 VOL: 0
 ;PCODE: $00000BEA VOL: 0
 ;PCODE: $00000BEB VOL: 0
-;void set_sold_cur_temp(int temp)
-; 0000 0058 {
 ;PCODE: $00000BEC VOL: 0
 ;PCODE: $00000BED VOL: 0
-; 0000 0059     char buf[5];
-; 0000 005A     sprintf( buf,"%i ",temp);
 ;PCODE: $00000BEE VOL: 0
 ;PCODE: $00000BEF VOL: 0
-;	temp -> Y+5
-;	buf -> Y+0
 ;PCODE: $00000BF0 VOL: 0
 ;PCODE: $00000BF1 VOL: 0
 ;PCODE: $00000BF2 VOL: 0
@@ -4493,52 +4505,54 @@
 ;PCODE: $00000BF6 VOL: 0
 ;PCODE: $00000BF7 VOL: 0
 ;PCODE: $00000BF8 VOL: 0
+; 0000 0064     dn++;
 ;PCODE: $00000BF9 VOL: 0
 ;PCODE: $00000BFA VOL: 0
+; 0000 0065    }
 ;PCODE: $00000BFB VOL: 0
-; 0000 005B     LCD_Puts(buf,50,10,GREEN,WHITE,3,3);
 ;PCODE: $00000BFC VOL: 0
 ;PCODE: $00000BFD VOL: 0
+; 0000 0066   }
 ;PCODE: $00000BFE VOL: 0
 ;PCODE: $00000BFF VOL: 0
 ;PCODE: $00000C00 VOL: 0
 ;PCODE: $00000C01 VOL: 0
 ;PCODE: $00000C02 VOL: 0
+; 0000 0067 }
 ;PCODE: $00000C03 VOL: 0
 ;PCODE: $00000C04 VOL: 0
 ;PCODE: $00000C05 VOL: 0
 ;PCODE: $00000C06 VOL: 0
+;void set_sold_cur_temp(int temp)
+; 0000 0069 {
 ;PCODE: $00000C07 VOL: 0
 ;PCODE: $00000C08 VOL: 0
+; 0000 006A     char buf[5];
+; 0000 006B     sprintf( buf,"%i  ",temp);
 ;PCODE: $00000C09 VOL: 0
-; 0000 005C }
 ;PCODE: $00000C0A VOL: 0
-;PCODE: $00000C0B VOL: 0
-;PCODE: $00000C0C VOL: 0
-;
-;void set_sold_temp(int temp)
-; 0000 005F {
-;PCODE: $00000C0D VOL: 0
-;PCODE: $00000C0E VOL: 0
-; 0000 0060     char buf[5];
-; 0000 0061     sprintf( buf,"%i  ",temp );
-;PCODE: $00000C0F VOL: 0
-;PCODE: $00000C10 VOL: 0
 ;	temp -> Y+5
 ;	buf -> Y+0
+;PCODE: $00000C0B VOL: 0
+;PCODE: $00000C0C VOL: 0
+;PCODE: $00000C0D VOL: 0
+;PCODE: $00000C0E VOL: 0
+;PCODE: $00000C0F VOL: 0
+;PCODE: $00000C10 VOL: 0
 ;PCODE: $00000C11 VOL: 0
 ;PCODE: $00000C12 VOL: 0
 ;PCODE: $00000C13 VOL: 0
 ;PCODE: $00000C14 VOL: 0
 ;PCODE: $00000C15 VOL: 0
 ;PCODE: $00000C16 VOL: 0
+; 0000 006C     buf[3]=0;
 ;PCODE: $00000C17 VOL: 0
 ;PCODE: $00000C18 VOL: 0
+; 0000 006D     LCD_Puts(buf,50,10,GREEN,WHITE,3,3);
 ;PCODE: $00000C19 VOL: 0
 ;PCODE: $00000C1A VOL: 0
 ;PCODE: $00000C1B VOL: 0
 ;PCODE: $00000C1C VOL: 0
-; 0000 0062     LCD_Puts(buf,120,10,RED,WHITE,3,3);
 ;PCODE: $00000C1D VOL: 0
 ;PCODE: $00000C1E VOL: 0
 ;PCODE: $00000C1F VOL: 0
@@ -4549,25 +4563,25 @@
 ;PCODE: $00000C24 VOL: 0
 ;PCODE: $00000C25 VOL: 0
 ;PCODE: $00000C26 VOL: 0
+; 0000 006E }
 ;PCODE: $00000C27 VOL: 0
 ;PCODE: $00000C28 VOL: 0
 ;PCODE: $00000C29 VOL: 0
+;
+;void set_sold_temp(int temp)
+; 0000 0071 {
 ;PCODE: $00000C2A VOL: 0
-; 0000 0063 }
 ;PCODE: $00000C2B VOL: 0
+; 0000 0072     char buf[1];
+; 0000 0073     sprintf( buf,"%i  ",temp );
 ;PCODE: $00000C2C VOL: 0
 ;PCODE: $00000C2D VOL: 0
-;
-;void set_air_cur_temp(int temp)
-; 0000 0066 {
+;	temp -> Y+1
+;	buf -> Y+0
 ;PCODE: $00000C2E VOL: 0
 ;PCODE: $00000C2F VOL: 0
-; 0000 0067     char buf[5];
-; 0000 0068     sprintf( buf,"%i ",temp );
 ;PCODE: $00000C30 VOL: 0
 ;PCODE: $00000C31 VOL: 0
-;	temp -> Y+5
-;	buf -> Y+0
 ;PCODE: $00000C32 VOL: 0
 ;PCODE: $00000C33 VOL: 0
 ;PCODE: $00000C34 VOL: 0
@@ -4576,11 +4590,12 @@
 ;PCODE: $00000C37 VOL: 0
 ;PCODE: $00000C38 VOL: 0
 ;PCODE: $00000C39 VOL: 0
+; 0000 0074     buf[3]=0;
 ;PCODE: $00000C3A VOL: 0
 ;PCODE: $00000C3B VOL: 0
+; 0000 0075     LCD_Puts(buf,120,10,RED,WHITE,3,3);
 ;PCODE: $00000C3C VOL: 0
 ;PCODE: $00000C3D VOL: 0
-; 0000 0069     LCD_Puts(buf,50,50,GREEN,WHITE,3,3);
 ;PCODE: $00000C3E VOL: 0
 ;PCODE: $00000C3F VOL: 0
 ;PCODE: $00000C40 VOL: 0
@@ -4593,23 +4608,23 @@
 ;PCODE: $00000C47 VOL: 0
 ;PCODE: $00000C48 VOL: 0
 ;PCODE: $00000C49 VOL: 0
+; 0000 0076 }
 ;PCODE: $00000C4A VOL: 0
 ;PCODE: $00000C4B VOL: 0
-; 0000 006A }
 ;PCODE: $00000C4C VOL: 0
+;
+;void set_air_cur_temp(int temp)
+; 0000 0079 {
 ;PCODE: $00000C4D VOL: 0
 ;PCODE: $00000C4E VOL: 0
-;
-;void set_air_temp(int temp)
-; 0000 006D {
+; 0000 007A     char buf[5];
+; 0000 007B     sprintf( buf,"%i  ",temp );
 ;PCODE: $00000C4F VOL: 0
 ;PCODE: $00000C50 VOL: 0
-; 0000 006E     char buf[5];
-; 0000 006F     sprintf( buf,"%i  ",temp);
-;PCODE: $00000C51 VOL: 0
-;PCODE: $00000C52 VOL: 0
 ;	temp -> Y+5
 ;	buf -> Y+0
+;PCODE: $00000C51 VOL: 0
+;PCODE: $00000C52 VOL: 0
 ;PCODE: $00000C53 VOL: 0
 ;PCODE: $00000C54 VOL: 0
 ;PCODE: $00000C55 VOL: 0
@@ -4620,9 +4635,10 @@
 ;PCODE: $00000C5A VOL: 0
 ;PCODE: $00000C5B VOL: 0
 ;PCODE: $00000C5C VOL: 0
+; 0000 007C     buf[3]=0;
 ;PCODE: $00000C5D VOL: 0
 ;PCODE: $00000C5E VOL: 0
-; 0000 0070     LCD_Puts(buf,120,50,RED,WHITE,3,3);
+; 0000 007D     LCD_Puts(buf,50,50,GREEN,WHITE,3,3);
 ;PCODE: $00000C5F VOL: 0
 ;PCODE: $00000C60 VOL: 0
 ;PCODE: $00000C61 VOL: 0
@@ -4637,19 +4653,20 @@
 ;PCODE: $00000C6A VOL: 0
 ;PCODE: $00000C6B VOL: 0
 ;PCODE: $00000C6C VOL: 0
-; 0000 0071 }
+; 0000 007E }
 ;PCODE: $00000C6D VOL: 0
 ;PCODE: $00000C6E VOL: 0
 ;PCODE: $00000C6F VOL: 0
-;void set_fan(int fan)
-; 0000 0073 {
+;
+;void set_air_temp(int temp)
+; 0000 0081 {
 ;PCODE: $00000C70 VOL: 0
 ;PCODE: $00000C71 VOL: 0
-; 0000 0074     char buf[4];
-; 0000 0075     sprintf( buf,"%i%%",fan );
+; 0000 0082     char buf[5];
+; 0000 0083     sprintf( buf,"%i  ",temp);
 ;PCODE: $00000C72 VOL: 0
 ;PCODE: $00000C73 VOL: 0
-;	fan -> Y+4
+;	temp -> Y+5
 ;	buf -> Y+0
 ;PCODE: $00000C74 VOL: 0
 ;PCODE: $00000C75 VOL: 0
@@ -4663,9 +4680,10 @@
 ;PCODE: $00000C7D VOL: 0
 ;PCODE: $00000C7E VOL: 0
 ;PCODE: $00000C7F VOL: 0
-; 0000 0076     LCD_Puts(buf,50,90,BLACK,WHITE,3,3);
+; 0000 0084     buf[3]=0;
 ;PCODE: $00000C80 VOL: 0
 ;PCODE: $00000C81 VOL: 0
+; 0000 0085     LCD_Puts(buf,120,50,RED,WHITE,3,3);
 ;PCODE: $00000C82 VOL: 0
 ;PCODE: $00000C83 VOL: 0
 ;PCODE: $00000C84 VOL: 0
@@ -4678,83 +4696,64 @@
 ;PCODE: $00000C8B VOL: 0
 ;PCODE: $00000C8C VOL: 0
 ;PCODE: $00000C8D VOL: 0
-; 0000 0077 }
 ;PCODE: $00000C8E VOL: 0
 ;PCODE: $00000C8F VOL: 0
+; 0000 0086 }
 ;PCODE: $00000C90 VOL: 0
-;// Timer 0 overflow interrupt service routine
-;interrupt [TIM0_OVF] void timer0_ovf_isr(void)
-; 0000 007A {
 ;PCODE: $00000C91 VOL: 0
 ;PCODE: $00000C92 VOL: 0
-; 0000 007B // Place your code here
-; 0000 007C 
-; 0000 007D }
+;void set_fan(int fan)
+; 0000 0088 {
 ;PCODE: $00000C93 VOL: 0
 ;PCODE: $00000C94 VOL: 0
+; 0000 0089     char buf[5];
+; 0000 008A     sprintf( buf,"%i%%  ",fan );
 ;PCODE: $00000C95 VOL: 0
-;
-;// Voltage Reference: AREF pin
-;#define ADC_VREF_TYPE ((0<<REFS1) | (0<<REFS0) | (0<<ADLAR))
-;
-;// Read the AD conversion result
-;unsigned int read_adc(unsigned char adc_input)
-; 0000 0084 {
 ;PCODE: $00000C96 VOL: 0
+;	fan -> Y+5
+;	buf -> Y+0
 ;PCODE: $00000C97 VOL: 0
-; 0000 0085 ADMUX=adc_input | ADC_VREF_TYPE;
 ;PCODE: $00000C98 VOL: 0
-;	adc_input -> Y+0
 ;PCODE: $00000C99 VOL: 0
 ;PCODE: $00000C9A VOL: 0
 ;PCODE: $00000C9B VOL: 0
-; 0000 0086 // Delay needed for the stabilization of the ADC input voltage
-; 0000 0087 delay_us(10);
 ;PCODE: $00000C9C VOL: 0
-; 0000 0088 // Start the AD conversion
-; 0000 0089 ADCSRA|=(1<<ADSC);
 ;PCODE: $00000C9D VOL: 0
 ;PCODE: $00000C9E VOL: 0
-; 0000 008A // Wait for the AD conversion to complete
-; 0000 008B while ((ADCSRA & (1<<ADIF))==0);
 ;PCODE: $00000C9F VOL: 0
 ;PCODE: $00000CA0 VOL: 0
 ;PCODE: $00000CA1 VOL: 0
 ;PCODE: $00000CA2 VOL: 0
+; 0000 008B     buf[4]=0;
 ;PCODE: $00000CA3 VOL: 0
 ;PCODE: $00000CA4 VOL: 0
-; 0000 008C ADCSRA|=(1<<ADIF);
+; 0000 008C     LCD_Puts(buf,50,90,BLACK,WHITE,3,3);
 ;PCODE: $00000CA5 VOL: 0
 ;PCODE: $00000CA6 VOL: 0
-; 0000 008D return ADCW;
 ;PCODE: $00000CA7 VOL: 0
 ;PCODE: $00000CA8 VOL: 0
 ;PCODE: $00000CA9 VOL: 0
-; 0000 008E }
 ;PCODE: $00000CAA VOL: 0
-;
-;int get_solder_temp(void)
-; 0000 0091 {
 ;PCODE: $00000CAB VOL: 0
 ;PCODE: $00000CAC VOL: 0
-; 0000 0092  int adc_t=read_adc(6);
-; 0000 0093  printf("adc_t= %i\r\n", adc_t);
 ;PCODE: $00000CAD VOL: 0
-;	adc_t -> R16,R17
 ;PCODE: $00000CAE VOL: 0
 ;PCODE: $00000CAF VOL: 0
 ;PCODE: $00000CB0 VOL: 0
 ;PCODE: $00000CB1 VOL: 0
 ;PCODE: $00000CB2 VOL: 0
+; 0000 008D }
 ;PCODE: $00000CB3 VOL: 0
 ;PCODE: $00000CB4 VOL: 0
 ;PCODE: $00000CB5 VOL: 0
+;void get_all_input(void)
+; 0000 008F {
 ;PCODE: $00000CB6 VOL: 0
 ;PCODE: $00000CB7 VOL: 0
+; 0000 0090     solder_cur= map(read_adc(solder_TC), 0, 750, 0, 480);
 ;PCODE: $00000CB8 VOL: 0
 ;PCODE: $00000CB9 VOL: 0
 ;PCODE: $00000CBA VOL: 0
-; 0000 0094  printf("solder11= %i\r\n", (adc_t*53)/1000-57);
 ;PCODE: $00000CBB VOL: 0
 ;PCODE: $00000CBC VOL: 0
 ;PCODE: $00000CBD VOL: 0
@@ -4765,289 +4764,309 @@
 ;PCODE: $00000CC2 VOL: 0
 ;PCODE: $00000CC3 VOL: 0
 ;PCODE: $00000CC4 VOL: 0
+; 0000 0091     air_cur= map(read_adc(air_TC), 0, 750, 0, 480);
 ;PCODE: $00000CC5 VOL: 0
 ;PCODE: $00000CC6 VOL: 0
 ;PCODE: $00000CC7 VOL: 0
 ;PCODE: $00000CC8 VOL: 0
 ;PCODE: $00000CC9 VOL: 0
 ;PCODE: $00000CCA VOL: 0
-; 0000 0095  return (adc_t-107)/2;
 ;PCODE: $00000CCB VOL: 0
 ;PCODE: $00000CCC VOL: 0
 ;PCODE: $00000CCD VOL: 0
 ;PCODE: $00000CCE VOL: 0
 ;PCODE: $00000CCF VOL: 0
 ;PCODE: $00000CD0 VOL: 0
-; 0000 0096 }
 ;PCODE: $00000CD1 VOL: 0
-;void main(void)
-; 0000 0098 {
+; 0000 0092     solder_set= map(read_adc(solder_RR), 0, 1023, 0, 480);
 ;PCODE: $00000CD2 VOL: 0
-; 0000 0099 // Declare your local variables here
-; 0000 009A 
-; 0000 009B // Input/Output Ports initialization
-; 0000 009C // Port B initialization
-; 0000 009D // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=Out Bit1=Out Bit0=Out
-; 0000 009E DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (1<<DDB2) | (1<<DDB1) | (1<<DDB0);
 ;PCODE: $00000CD3 VOL: 0
 ;PCODE: $00000CD4 VOL: 0
-; 0000 009F // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=0 Bit1=0 Bit0=0
-; 0000 00A0 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
 ;PCODE: $00000CD5 VOL: 0
 ;PCODE: $00000CD6 VOL: 0
-; 0000 00A1 
-; 0000 00A2 // Port C initialization
-; 0000 00A3 // Function: Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
-; 0000 00A4 DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (0<<DDC2) | (0<<DDC1) | (0<<DDC0);
 ;PCODE: $00000CD7 VOL: 0
 ;PCODE: $00000CD8 VOL: 0
-; 0000 00A5 // State: Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
-; 0000 00A6 PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 ;PCODE: $00000CD9 VOL: 0
 ;PCODE: $00000CDA VOL: 0
-; 0000 00A7 
-; 0000 00A8 // Port D initialization
-; 0000 00A9 // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=In Bit1=In Bit0=In
-; 0000 00AA DDRD=(1<<DDD7) | (1<<DDD6) | (1<<DDD5) | (1<<DDD4) | (1<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
 ;PCODE: $00000CDB VOL: 0
 ;PCODE: $00000CDC VOL: 0
-; 0000 00AB // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
-; 0000 00AC PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
 ;PCODE: $00000CDD VOL: 0
 ;PCODE: $00000CDE VOL: 0
-; 0000 00AD 
-; 0000 00AE // Timer/Counter 0 initialization
-; 0000 00AF // Clock source: System Clock
-; 0000 00B0 // Clock value: 0,977 kHz
-; 0000 00B1 TCCR0=(1<<CS02) | (0<<CS01) | (1<<CS00);
+; 0000 0093     air_set= map(read_adc(air_RR), 0, 1023, 0, 480);
 ;PCODE: $00000CDF VOL: 0
 ;PCODE: $00000CE0 VOL: 0
-; 0000 00B2 TCNT0=0x00;
 ;PCODE: $00000CE1 VOL: 0
 ;PCODE: $00000CE2 VOL: 0
-; 0000 00B3 
-; 0000 00B4 // Timer/Counter 1 initialization
-; 0000 00B5 // Clock source: System Clock
-; 0000 00B6 // Clock value: 1000,000 kHz
-; 0000 00B7 // Mode: Ph. correct PWM top=0x03FF
-; 0000 00B8 // OC1A output: Inverted PWM
-; 0000 00B9 // OC1B output: Inverted PWM
-; 0000 00BA // Noise Canceler: Off
-; 0000 00BB // Input Capture on Falling Edge
-; 0000 00BC // Timer Period: 2,046 ms
-; 0000 00BD // Output Pulse(s):
-; 0000 00BE // OC1A Period: 2,046 ms Width: 2,046 ms// OC1B Period: 2,046 ms Width: 2,046 ms
-; 0000 00BF // Timer1 Overflow Interrupt: Off
-; 0000 00C0 // Input Capture Interrupt: Off
-; 0000 00C1 // Compare A Match Interrupt: Off
-; 0000 00C2 // Compare B Match Interrupt: Off
-; 0000 00C3 TCCR1A=(1<<COM1A1) | (1<<COM1A0) | (1<<COM1B1) | (1<<COM1B0) | (1<<WGM11) | (1<<WGM10);
 ;PCODE: $00000CE3 VOL: 0
 ;PCODE: $00000CE4 VOL: 0
-; 0000 00C4 TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (1<<CS10);
 ;PCODE: $00000CE5 VOL: 0
 ;PCODE: $00000CE6 VOL: 0
-; 0000 00C5 TCNT1H=0x00;
 ;PCODE: $00000CE7 VOL: 0
 ;PCODE: $00000CE8 VOL: 0
-; 0000 00C6 TCNT1L=0x00;
 ;PCODE: $00000CE9 VOL: 0
 ;PCODE: $00000CEA VOL: 0
-; 0000 00C7 ICR1H=0x00;
 ;PCODE: $00000CEB VOL: 0
+; 0000 0094     fan_set= map(read_adc(fan_RR), 0, 1023, 0, 100);;
 ;PCODE: $00000CEC VOL: 0
-; 0000 00C8 ICR1L=0x00;
 ;PCODE: $00000CED VOL: 0
 ;PCODE: $00000CEE VOL: 0
-; 0000 00C9 OCR1AH=0x00;
 ;PCODE: $00000CEF VOL: 0
 ;PCODE: $00000CF0 VOL: 0
-; 0000 00CA OCR1AL=0x00;
 ;PCODE: $00000CF1 VOL: 0
 ;PCODE: $00000CF2 VOL: 0
-; 0000 00CB OCR1BH=0x00;
 ;PCODE: $00000CF3 VOL: 0
 ;PCODE: $00000CF4 VOL: 0
-; 0000 00CC OCR1BL=0x00;
 ;PCODE: $00000CF5 VOL: 0
 ;PCODE: $00000CF6 VOL: 0
-; 0000 00CD 
-; 0000 00CE // Timer/Counter 2 initialization
-; 0000 00CF // Clock source: System Clock
-; 0000 00D0 // Clock value: Timer2 Stopped
-; 0000 00D1 // Mode: Normal top=0xFF
-; 0000 00D2 // OC2 output: Disconnected
-; 0000 00D3 ASSR=0<<AS2;
 ;PCODE: $00000CF7 VOL: 0
 ;PCODE: $00000CF8 VOL: 0
-; 0000 00D4 TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
+; 0000 0095 }
 ;PCODE: $00000CF9 VOL: 0
 ;PCODE: $00000CFA VOL: 0
-; 0000 00D5 TCNT2=0x00;
+;// Timer 0 overflow interrupt service routine
+;interrupt [TIM0_OVF] void timer0_ovf_isr(void)
+; 0000 0098 {
 ;PCODE: $00000CFB VOL: 0
 ;PCODE: $00000CFC VOL: 0
-; 0000 00D6 OCR2=0x00;
+; 0000 0099 // Place your code here
+; 0000 009A 
+; 0000 009B }
 ;PCODE: $00000CFD VOL: 0
 ;PCODE: $00000CFE VOL: 0
-; 0000 00D7 
-; 0000 00D8 // Timer(s)/Counter(s) Interrupt(s) initialization
-; 0000 00D9 TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (1<<TOIE0);
 ;PCODE: $00000CFF VOL: 0
+;
+;// Voltage Reference: AREF pin
+;#define ADC_VREF_TYPE ((0<<REFS1) | (0<<REFS0) | (0<<ADLAR))
+;
+;// Read the AD conversion result
+;unsigned int read_adc(unsigned char adc_input)
+; 0000 00A2 {
 ;PCODE: $00000D00 VOL: 0
-; 0000 00DA 
-; 0000 00DB // External Interrupt(s) initialization
-; 0000 00DC // INT0: Off
-; 0000 00DD // INT1: Off
-; 0000 00DE MCUCR=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
 ;PCODE: $00000D01 VOL: 0
+; 0000 00A3 ADMUX=adc_input | ADC_VREF_TYPE;
 ;PCODE: $00000D02 VOL: 0
-; 0000 00DF 
-; 0000 00E0 // USART initialization
-; 0000 00E1 // Communication Parameters: 8 Data, 1 Stop, No Parity
-; 0000 00E2 // USART Receiver: Off
-; 0000 00E3 // USART Transmitter: On
-; 0000 00E4 // USART Mode: Asynchronous
-; 0000 00E5 // USART Baud Rate: 4800
-; 0000 00E6 UCSRA=(0<<RXC) | (0<<TXC) | (0<<UDRE) | (0<<FE) | (0<<DOR) | (0<<UPE) | (0<<U2X) | (0<<MPCM);
+;	adc_input -> Y+0
 ;PCODE: $00000D03 VOL: 0
 ;PCODE: $00000D04 VOL: 0
-; 0000 00E7 UCSRB=(0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (1<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
 ;PCODE: $00000D05 VOL: 0
+; 0000 00A4 // Delay needed for the stabilization of the ADC input voltage
+; 0000 00A5 delay_us(10);
 ;PCODE: $00000D06 VOL: 0
-; 0000 00E8 UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCPOL);
+; 0000 00A6 // Start the AD conversion
+; 0000 00A7 ADCSRA|=(1<<ADSC);
 ;PCODE: $00000D07 VOL: 0
 ;PCODE: $00000D08 VOL: 0
-; 0000 00E9 UBRRH=0x00;
+; 0000 00A8 // Wait for the AD conversion to complete
+; 0000 00A9 while ((ADCSRA & (1<<ADIF))==0);
 ;PCODE: $00000D09 VOL: 0
 ;PCODE: $00000D0A VOL: 0
-; 0000 00EA UBRRL=0x0C;
 ;PCODE: $00000D0B VOL: 0
 ;PCODE: $00000D0C VOL: 0
-; 0000 00EB 
-; 0000 00EC // Analog Comparator initialization
-; 0000 00ED // Analog Comparator: Off
-; 0000 00EE // The Analog Comparator's positive input is
-; 0000 00EF // connected to the AIN0 pin
-; 0000 00F0 // The Analog Comparator's negative input is
-; 0000 00F1 // connected to the AIN1 pin
-; 0000 00F2 ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
 ;PCODE: $00000D0D VOL: 0
 ;PCODE: $00000D0E VOL: 0
-; 0000 00F3 
-; 0000 00F4 // ADC initialization
-; 0000 00F5 // ADC Clock frequency: 7,813 kHz
-; 0000 00F6 // ADC Voltage Reference: AREF pin
-; 0000 00F7 ADMUX=ADC_VREF_TYPE;
+; 0000 00AA ADCSRA|=(1<<ADIF);
 ;PCODE: $00000D0F VOL: 0
 ;PCODE: $00000D10 VOL: 0
-; 0000 00F8 ADCSRA=(1<<ADEN) | (0<<ADSC) | (0<<ADFR) | (0<<ADIF) | (0<<ADIE) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
+; 0000 00AB return ADCW;
 ;PCODE: $00000D11 VOL: 0
 ;PCODE: $00000D12 VOL: 0
-; 0000 00F9 SFIOR=(0<<ACME);
 ;PCODE: $00000D13 VOL: 0
+; 0000 00AC }
 ;PCODE: $00000D14 VOL: 0
-; 0000 00FA 
-; 0000 00FB // SPI initialization
-; 0000 00FC // SPI disabled
-; 0000 00FD SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
+;
+;
+;void main(void)
+; 0000 00B0 {
 ;PCODE: $00000D15 VOL: 0
+; 0000 00B1 // Declare your local variables here
+; 0000 00B2 
+; 0000 00B3 // Input/Output Ports initialization
+; 0000 00B4 // Port B initialization
+; 0000 00B5 // Function: Bit7=In Bit6=In Bit5=In Bit4=In Bit3=In Bit2=Out Bit1=Out Bit0=Out
+; 0000 00B6 DDRB=(0<<DDB7) | (0<<DDB6) | (0<<DDB5) | (0<<DDB4) | (0<<DDB3) | (1<<DDB2) | (1<<DDB1) | (1<<DDB0);
 ;PCODE: $00000D16 VOL: 0
-; 0000 00FE 
-; 0000 00FF // TWI initialization
-; 0000 0100 // TWI disabled
-; 0000 0101 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 ;PCODE: $00000D17 VOL: 0
+; 0000 00B7 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=0 Bit1=0 Bit0=0
+; 0000 00B8 PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<PORTB2) | (0<<PORTB1) | (0<<PORTB0);
 ;PCODE: $00000D18 VOL: 0
-; 0000 0102 
-; 0000 0103 // Global enable interrupts
-; 0000 0104 #asm("sei")
 ;PCODE: $00000D19 VOL: 0
-	sei
+; 0000 00B9 
+; 0000 00BA // Port C initialization
+; 0000 00BB // Function: Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In
+; 0000 00BC DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (0<<DDC2) | (0<<DDC1) | (0<<DDC0);
 ;PCODE: $00000D1A VOL: 0
-; 0000 0105       LCD_init();
 ;PCODE: $00000D1B VOL: 0
-; 0000 0106       SetRotation(90);
+; 0000 00BD // State: Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
+; 0000 00BE PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 ;PCODE: $00000D1C VOL: 0
 ;PCODE: $00000D1D VOL: 0
+; 0000 00BF 
+; 0000 00C0 // Port D initialization
+; 0000 00C1 // Function: Bit7=Out Bit6=Out Bit5=Out Bit4=Out Bit3=Out Bit2=In Bit1=In Bit0=In
+; 0000 00C2 DDRD=(1<<DDD7) | (1<<DDD6) | (1<<DDD5) | (1<<DDD4) | (1<<DDD3) | (0<<DDD2) | (0<<DDD1) | (0<<DDD0);
 ;PCODE: $00000D1E VOL: 0
-; 0000 0107       LCD_Puts(" LNSOLDER ",0,50,WHITE,BLACK,3,3);
 ;PCODE: $00000D1F VOL: 0
+; 0000 00C3 // State: Bit7=T Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T
+; 0000 00C4 PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<PORTD2) | (0<<PORTD1) | (0<<PORTD0);
 ;PCODE: $00000D20 VOL: 0
 ;PCODE: $00000D21 VOL: 0
+; 0000 00C5 
+; 0000 00C6 // Timer/Counter 0 initialization
+; 0000 00C7 // Clock source: System Clock
+; 0000 00C8 // Clock value: 0,977 kHz
+; 0000 00C9 TCCR0=(1<<CS02) | (0<<CS01) | (1<<CS00);
 ;PCODE: $00000D22 VOL: 0
 ;PCODE: $00000D23 VOL: 0
+; 0000 00CA TCNT0=0x00;
 ;PCODE: $00000D24 VOL: 0
 ;PCODE: $00000D25 VOL: 0
+; 0000 00CB 
+; 0000 00CC // Timer/Counter 1 initialization
+; 0000 00CD // Clock source: System Clock
+; 0000 00CE // Clock value: 1000,000 kHz
+; 0000 00CF // Mode: Ph. correct PWM top=0x03FF
+; 0000 00D0 // OC1A output: Inverted PWM
+; 0000 00D1 // OC1B output: Inverted PWM
+; 0000 00D2 // Noise Canceler: Off
+; 0000 00D3 // Input Capture on Falling Edge
+; 0000 00D4 // Timer Period: 2,046 ms
+; 0000 00D5 // Output Pulse(s):
+; 0000 00D6 // OC1A Period: 2,046 ms Width: 2,046 ms// OC1B Period: 2,046 ms Width: 2,046 ms
+; 0000 00D7 // Timer1 Overflow Interrupt: Off
+; 0000 00D8 // Input Capture Interrupt: Off
+; 0000 00D9 // Compare A Match Interrupt: Off
+; 0000 00DA // Compare B Match Interrupt: Off
+; 0000 00DB TCCR1A=(1<<COM1A1) | (1<<COM1A0) | (1<<COM1B1) | (1<<COM1B0) | (1<<WGM11) | (1<<WGM10);
 ;PCODE: $00000D26 VOL: 0
 ;PCODE: $00000D27 VOL: 0
+; 0000 00DC TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (1<<CS10);
 ;PCODE: $00000D28 VOL: 0
 ;PCODE: $00000D29 VOL: 0
+; 0000 00DD TCNT1H=0x00;
 ;PCODE: $00000D2A VOL: 0
 ;PCODE: $00000D2B VOL: 0
+; 0000 00DE TCNT1L=0x00;
 ;PCODE: $00000D2C VOL: 0
 ;PCODE: $00000D2D VOL: 0
-; 0000 0108       delay_ms(1000);
+; 0000 00DF ICR1H=0x00;
 ;PCODE: $00000D2E VOL: 0
 ;PCODE: $00000D2F VOL: 0
-; 0000 0109           LCD_FillScreen(WHITE);
+; 0000 00E0 ICR1L=0x00;
 ;PCODE: $00000D30 VOL: 0
 ;PCODE: $00000D31 VOL: 0
-; 0000 010A 
-; 0000 010B            draw_2bit_image (0,5,32,32,BLUE,WHITE,solder_img);
+; 0000 00E1 OCR1AH=0x00;
 ;PCODE: $00000D32 VOL: 0
 ;PCODE: $00000D33 VOL: 0
+; 0000 00E2 OCR1AL=0x00;
 ;PCODE: $00000D34 VOL: 0
 ;PCODE: $00000D35 VOL: 0
+; 0000 00E3 OCR1BH=0x00;
 ;PCODE: $00000D36 VOL: 0
 ;PCODE: $00000D37 VOL: 0
+; 0000 00E4 OCR1BL=0x00;
 ;PCODE: $00000D38 VOL: 0
 ;PCODE: $00000D39 VOL: 0
+; 0000 00E5 
+; 0000 00E6 // Timer/Counter 2 initialization
+; 0000 00E7 // Clock source: System Clock
+; 0000 00E8 // Clock value: Timer2 Stopped
+; 0000 00E9 // Mode: Normal top=0xFF
+; 0000 00EA // OC2 output: Disconnected
+; 0000 00EB ASSR=0<<AS2;
 ;PCODE: $00000D3A VOL: 0
 ;PCODE: $00000D3B VOL: 0
+; 0000 00EC TCCR2=(0<<PWM2) | (0<<COM21) | (0<<COM20) | (0<<CTC2) | (0<<CS22) | (0<<CS21) | (0<<CS20);
 ;PCODE: $00000D3C VOL: 0
 ;PCODE: $00000D3D VOL: 0
+; 0000 00ED TCNT2=0x00;
 ;PCODE: $00000D3E VOL: 0
 ;PCODE: $00000D3F VOL: 0
-; 0000 010C            LCD_DrawLine(0,40,175,40,BLACK);
+; 0000 00EE OCR2=0x00;
 ;PCODE: $00000D40 VOL: 0
 ;PCODE: $00000D41 VOL: 0
+; 0000 00EF 
+; 0000 00F0 // Timer(s)/Counter(s) Interrupt(s) initialization
+; 0000 00F1 TIMSK=(0<<OCIE2) | (0<<TOIE2) | (0<<TICIE1) | (0<<OCIE1A) | (0<<OCIE1B) | (0<<TOIE1) | (1<<TOIE0);
 ;PCODE: $00000D42 VOL: 0
 ;PCODE: $00000D43 VOL: 0
+; 0000 00F2 
+; 0000 00F3 // External Interrupt(s) initialization
+; 0000 00F4 // INT0: Off
+; 0000 00F5 // INT1: Off
+; 0000 00F6 MCUCR=(0<<ISC11) | (0<<ISC10) | (0<<ISC01) | (0<<ISC00);
 ;PCODE: $00000D44 VOL: 0
 ;PCODE: $00000D45 VOL: 0
+; 0000 00F7 
+; 0000 00F8 // USART initialization
+; 0000 00F9 // Communication Parameters: 8 Data, 1 Stop, No Parity
+; 0000 00FA // USART Receiver: Off
+; 0000 00FB // USART Transmitter: On
+; 0000 00FC // USART Mode: Asynchronous
+; 0000 00FD // USART Baud Rate: 4800
+; 0000 00FE UCSRA=(0<<RXC) | (0<<TXC) | (0<<UDRE) | (0<<FE) | (0<<DOR) | (0<<UPE) | (0<<U2X) | (0<<MPCM);
 ;PCODE: $00000D46 VOL: 0
 ;PCODE: $00000D47 VOL: 0
+; 0000 00FF UCSRB=(0<<RXCIE) | (0<<TXCIE) | (0<<UDRIE) | (0<<RXEN) | (1<<TXEN) | (0<<UCSZ2) | (0<<RXB8) | (0<<TXB8);
 ;PCODE: $00000D48 VOL: 0
 ;PCODE: $00000D49 VOL: 0
+; 0000 0100 UCSRC=(1<<URSEL) | (0<<UMSEL) | (0<<UPM1) | (0<<UPM0) | (0<<USBS) | (1<<UCSZ1) | (1<<UCSZ0) | (0<<UCPOL);
 ;PCODE: $00000D4A VOL: 0
-; 0000 010D            draw_2bit_image (0,45,32,32,BLUE,WHITE,hotair_img);
 ;PCODE: $00000D4B VOL: 0
+; 0000 0101 UBRRH=0x00;
 ;PCODE: $00000D4C VOL: 0
 ;PCODE: $00000D4D VOL: 0
+; 0000 0102 UBRRL=0x0C;
 ;PCODE: $00000D4E VOL: 0
 ;PCODE: $00000D4F VOL: 0
+; 0000 0103 
+; 0000 0104 // Analog Comparator initialization
+; 0000 0105 // Analog Comparator: Off
+; 0000 0106 // The Analog Comparator's positive input is
+; 0000 0107 // connected to the AIN0 pin
+; 0000 0108 // The Analog Comparator's negative input is
+; 0000 0109 // connected to the AIN1 pin
+; 0000 010A ACSR=(1<<ACD) | (0<<ACBG) | (0<<ACO) | (0<<ACI) | (0<<ACIE) | (0<<ACIC) | (0<<ACIS1) | (0<<ACIS0);
 ;PCODE: $00000D50 VOL: 0
 ;PCODE: $00000D51 VOL: 0
+; 0000 010B 
+; 0000 010C // ADC initialization
+; 0000 010D // ADC Clock frequency: 7,813 kHz
+; 0000 010E // ADC Voltage Reference: AREF pin
+; 0000 010F ADMUX=ADC_VREF_TYPE;
 ;PCODE: $00000D52 VOL: 0
 ;PCODE: $00000D53 VOL: 0
+; 0000 0110 ADCSRA=(1<<ADEN) | (0<<ADSC) | (0<<ADFR) | (0<<ADIF) | (0<<ADIE) | (1<<ADPS2) | (1<<ADPS1) | (1<<ADPS0);
 ;PCODE: $00000D54 VOL: 0
 ;PCODE: $00000D55 VOL: 0
+; 0000 0111 SFIOR=(0<<ACME);
 ;PCODE: $00000D56 VOL: 0
 ;PCODE: $00000D57 VOL: 0
+; 0000 0112 
+; 0000 0113 // SPI initialization
+; 0000 0114 // SPI disabled
+; 0000 0115 SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<SPR1) | (0<<SPR0);
 ;PCODE: $00000D58 VOL: 0
-; 0000 010E            LCD_DrawLine(0,80,175,80,BLACK);
 ;PCODE: $00000D59 VOL: 0
+; 0000 0116 
+; 0000 0117 // TWI initialization
+; 0000 0118 // TWI disabled
+; 0000 0119 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 ;PCODE: $00000D5A VOL: 0
 ;PCODE: $00000D5B VOL: 0
+; 0000 011A 
+; 0000 011B // Global enable interrupts
+; 0000 011C 
+; 0000 011D LCD_init();
 ;PCODE: $00000D5C VOL: 0
+; 0000 011E SetRotation(90);
 ;PCODE: $00000D5D VOL: 0
 ;PCODE: $00000D5E VOL: 0
 ;PCODE: $00000D5F VOL: 0
+; 0000 011F LCD_Puts(" LNSOLDER ",0,50,WHITE,BLACK,3,3);
 ;PCODE: $00000D60 VOL: 0
 ;PCODE: $00000D61 VOL: 0
 ;PCODE: $00000D62 VOL: 0
 ;PCODE: $00000D63 VOL: 0
-; 0000 010F            draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);
 ;PCODE: $00000D64 VOL: 0
 ;PCODE: $00000D65 VOL: 0
 ;PCODE: $00000D66 VOL: 0
@@ -5059,11 +5078,14 @@
 ;PCODE: $00000D6C VOL: 0
 ;PCODE: $00000D6D VOL: 0
 ;PCODE: $00000D6E VOL: 0
+; 0000 0120 delay_ms(1000);
 ;PCODE: $00000D6F VOL: 0
 ;PCODE: $00000D70 VOL: 0
+; 0000 0121 LCD_FillScreen(WHITE);
 ;PCODE: $00000D71 VOL: 0
-; 0000 0110            LCD_DrawLine(0,120,175,120,BLACK);
 ;PCODE: $00000D72 VOL: 0
+; 0000 0122 
+; 0000 0123 draw_2bit_image (0,5,32,32,BLUE,WHITE,solder_img);
 ;PCODE: $00000D73 VOL: 0
 ;PCODE: $00000D74 VOL: 0
 ;PCODE: $00000D75 VOL: 0
@@ -5074,11 +5096,11 @@
 ;PCODE: $00000D7A VOL: 0
 ;PCODE: $00000D7B VOL: 0
 ;PCODE: $00000D7C VOL: 0
-; 0000 0111            LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);
 ;PCODE: $00000D7D VOL: 0
 ;PCODE: $00000D7E VOL: 0
 ;PCODE: $00000D7F VOL: 0
 ;PCODE: $00000D80 VOL: 0
+; 0000 0124 LCD_DrawLine(0,40,175,40,BLACK);
 ;PCODE: $00000D81 VOL: 0
 ;PCODE: $00000D82 VOL: 0
 ;PCODE: $00000D83 VOL: 0
@@ -5090,51 +5112,130 @@
 ;PCODE: $00000D89 VOL: 0
 ;PCODE: $00000D8A VOL: 0
 ;PCODE: $00000D8B VOL: 0
-; 0000 0112 
-; 0000 0113 
-; 0000 0114 
-; 0000 0115            set_sold_cur_temp(480);
+; 0000 0125 draw_2bit_image (0,45,32,32,BLUE,WHITE,hotair_img);
 ;PCODE: $00000D8C VOL: 0
 ;PCODE: $00000D8D VOL: 0
-; 0000 0116             set_sold_temp(480);
 ;PCODE: $00000D8E VOL: 0
 ;PCODE: $00000D8F VOL: 0
-; 0000 0117 
-; 0000 0118            set_air_cur_temp(480);
 ;PCODE: $00000D90 VOL: 0
 ;PCODE: $00000D91 VOL: 0
-; 0000 0119             set_air_temp(480);
 ;PCODE: $00000D92 VOL: 0
 ;PCODE: $00000D93 VOL: 0
-; 0000 011A              set_fan(5);
 ;PCODE: $00000D94 VOL: 0
 ;PCODE: $00000D95 VOL: 0
 ;PCODE: $00000D96 VOL: 0
-; 0000 011B while (1)
 ;PCODE: $00000D97 VOL: 0
-; 0000 011C 
-; 0000 011D       {
-; 0000 011E       // Place your code here
-; 0000 011F        set_sold_temp(read_adc(6));
 ;PCODE: $00000D98 VOL: 0
 ;PCODE: $00000D99 VOL: 0
+; 0000 0126 LCD_DrawLine(0,80,175,80,BLACK);
 ;PCODE: $00000D9A VOL: 0
 ;PCODE: $00000D9B VOL: 0
-; 0000 0120         set_sold_cur_temp(read_adc(2));
 ;PCODE: $00000D9C VOL: 0
 ;PCODE: $00000D9D VOL: 0
 ;PCODE: $00000D9E VOL: 0
 ;PCODE: $00000D9F VOL: 0
-; 0000 0121         delay_ms(300);
 ;PCODE: $00000DA0 VOL: 0
 ;PCODE: $00000DA1 VOL: 0
-; 0000 0122       }
 ;PCODE: $00000DA2 VOL: 0
 ;PCODE: $00000DA3 VOL: 0
-; 0000 0123 }
 ;PCODE: $00000DA4 VOL: 0
+; 0000 0127 draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);
 ;PCODE: $00000DA5 VOL: 0
 ;PCODE: $00000DA6 VOL: 0
+;PCODE: $00000DA7 VOL: 0
+;PCODE: $00000DA8 VOL: 0
+;PCODE: $00000DA9 VOL: 0
+;PCODE: $00000DAA VOL: 0
+;PCODE: $00000DAB VOL: 0
+;PCODE: $00000DAC VOL: 0
+;PCODE: $00000DAD VOL: 0
+;PCODE: $00000DAE VOL: 0
+;PCODE: $00000DAF VOL: 0
+;PCODE: $00000DB0 VOL: 0
+;PCODE: $00000DB1 VOL: 0
+;PCODE: $00000DB2 VOL: 0
+; 0000 0128 LCD_DrawLine(0,120,175,120,BLACK);
+;PCODE: $00000DB3 VOL: 0
+;PCODE: $00000DB4 VOL: 0
+;PCODE: $00000DB5 VOL: 0
+;PCODE: $00000DB6 VOL: 0
+;PCODE: $00000DB7 VOL: 0
+;PCODE: $00000DB8 VOL: 0
+;PCODE: $00000DB9 VOL: 0
+;PCODE: $00000DBA VOL: 0
+;PCODE: $00000DBB VOL: 0
+;PCODE: $00000DBC VOL: 0
+;PCODE: $00000DBD VOL: 0
+; 0000 0129 LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);
+;PCODE: $00000DBE VOL: 0
+;PCODE: $00000DBF VOL: 0
+;PCODE: $00000DC0 VOL: 0
+;PCODE: $00000DC1 VOL: 0
+;PCODE: $00000DC2 VOL: 0
+;PCODE: $00000DC3 VOL: 0
+;PCODE: $00000DC4 VOL: 0
+;PCODE: $00000DC5 VOL: 0
+;PCODE: $00000DC6 VOL: 0
+;PCODE: $00000DC7 VOL: 0
+;PCODE: $00000DC8 VOL: 0
+;PCODE: $00000DC9 VOL: 0
+;PCODE: $00000DCA VOL: 0
+;PCODE: $00000DCB VOL: 0
+;PCODE: $00000DCC VOL: 0
+; 0000 012A 
+; 0000 012B set_sold_cur_temp(480);
+;PCODE: $00000DCD VOL: 0
+;PCODE: $00000DCE VOL: 0
+; 0000 012C set_sold_temp(480);
+;PCODE: $00000DCF VOL: 0
+;PCODE: $00000DD0 VOL: 0
+; 0000 012D 
+; 0000 012E set_air_cur_temp(480);
+;PCODE: $00000DD1 VOL: 0
+;PCODE: $00000DD2 VOL: 0
+; 0000 012F set_air_temp(480);
+;PCODE: $00000DD3 VOL: 0
+;PCODE: $00000DD4 VOL: 0
+; 0000 0130  set_fan(5);
+;PCODE: $00000DD5 VOL: 0
+;PCODE: $00000DD6 VOL: 0
+;PCODE: $00000DD7 VOL: 0
+; 0000 0131 #asm("sei")
+;PCODE: $00000DD8 VOL: 0
+	sei
+;PCODE: $00000DD9 VOL: 0
+; 0000 0132 while (1)
+;PCODE: $00000DDA VOL: 0
+; 0000 0133 
+; 0000 0134 {
+; 0000 0135       // Place your code here
+; 0000 0136     get_all_input();
+;PCODE: $00000DDB VOL: 0
+; 0000 0137     set_fan(fan_set);
+;PCODE: $00000DDC VOL: 0
+;PCODE: $00000DDD VOL: 0
+; 0000 0138     set_sold_cur_temp(solder_set);
+;PCODE: $00000DDE VOL: 0
+;PCODE: $00000DDF VOL: 0
+; 0000 0139     set_sold_temp(solder_cur);
+;PCODE: $00000DE0 VOL: 0
+;PCODE: $00000DE1 VOL: 0
+; 0000 013A     set_air_cur_temp(air_set);
+;PCODE: $00000DE2 VOL: 0
+;PCODE: $00000DE3 VOL: 0
+; 0000 013B     set_air_temp(air_cur);
+;PCODE: $00000DE4 VOL: 0
+;PCODE: $00000DE5 VOL: 0
+; 0000 013C     delay_ms(300);
+;PCODE: $00000DE6 VOL: 0
+;PCODE: $00000DE7 VOL: 0
+; 0000 013D }
+;PCODE: $00000DE8 VOL: 0
+;PCODE: $00000DE9 VOL: 0
+; 0000 013E }
+;PCODE: $00000DEA VOL: 0
+;PCODE: $00000DEB VOL: 0
+;PCODE: $00000DEC VOL: 0
 
 	.DSEG
 _0x172:

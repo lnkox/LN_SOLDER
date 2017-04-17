@@ -53,18 +53,35 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,0X00,
 };
 
+#define solder_TC 6
+#define air_TC 7
+#define solder_RR 0
+#define air_RR 1
+#define fan_RR 2
+#define solder_but PINC.3
+#define air_but  PINC.4
+#define air_ger  PINC.5
 
 #include <mega8.h>
 
 #include <delay.h>
 #include <stdlib.h>
 #include <LPH9157-2.h>
-
-// Declare your global variables here
-
-// Standard Input/Output functions
 #include <stdio.h>
+ 
 
+unsigned int read_adc(unsigned char adc_input);
+
+int solder_cur=0;
+int air_cur=0;
+int solder_set=0;
+int air_set=0;
+int fan_set=0;
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+{
+  return (((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)/5)*5;
+}
 void draw_2bit_image(char x, char y, char width, char height,int color,int bg, flash char *img)
 {
   char xc,yc,dn=0;
@@ -87,35 +104,48 @@ void draw_2bit_image(char x, char y, char width, char height,int color,int bg, f
 void set_sold_cur_temp(int temp)
 {
     char buf[5];
-    sprintf( buf,"%i ",temp); 
+    sprintf( buf,"%i  ",temp);  
+    buf[3]=0;
     LCD_Puts(buf,50,10,GREEN,WHITE,3,3);
 }
 
 void set_sold_temp(int temp)
 {
-    char buf[5];
-    sprintf( buf,"%i  ",temp ); 
+    char buf[1];
+    sprintf( buf,"%i  ",temp );  
+    buf[3]=0;
     LCD_Puts(buf,120,10,RED,WHITE,3,3);
 }
 
 void set_air_cur_temp(int temp)
 {
     char buf[5];
-    sprintf( buf,"%i ",temp ); 
+    sprintf( buf,"%i  ",temp );   
+    buf[3]=0;
     LCD_Puts(buf,50,50,GREEN,WHITE,3,3);
 }
 
 void set_air_temp(int temp)
 {
     char buf[5];
-    sprintf( buf,"%i  ",temp); 
+    sprintf( buf,"%i  ",temp);  
+    buf[3]=0;
     LCD_Puts(buf,120,50,RED,WHITE,3,3);
 }
 void set_fan(int fan)
 {
-    char buf[4];
-    sprintf( buf,"%i%%",fan ); 
+    char buf[5];
+    sprintf( buf,"%i%%  ",fan );
+    buf[4]=0; 
     LCD_Puts(buf,50,90,BLACK,WHITE,3,3);
+}
+void get_all_input(void)
+{
+    solder_cur= map(read_adc(solder_TC), 0, 750, 0, 480);
+    air_cur= map(read_adc(air_TC), 0, 750, 0, 480);
+    solder_set= map(read_adc(solder_RR), 0, 1023, 0, 480);
+    air_set= map(read_adc(air_RR), 0, 1023, 0, 480);
+    fan_set= map(read_adc(fan_RR), 0, 1023, 0, 100);;
 }
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
@@ -141,13 +171,7 @@ ADCSRA|=(1<<ADIF);
 return ADCW;
 }
 
-int get_solder_temp(void)
-{
- int adc_t=read_adc(6);            
- printf("adc_t= %i\r\n", adc_t);
- printf("solder11= %i\r\n", (adc_t*53)/1000-57);  
- return (adc_t-107)/2;
-}
+
 void main(void)
 {
 // Declare your local variables here
@@ -257,37 +281,40 @@ SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<
 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 
 // Global enable interrupts
-#asm("sei")
-      LCD_init(); 
-      SetRotation(90);  
-      LCD_Puts(" LNSOLDER ",0,50,WHITE,BLACK,3,3); 
-      delay_ms(1000); 
-          LCD_FillScreen(WHITE);   
+
+LCD_init(); 
+SetRotation(90);  
+LCD_Puts(" LNSOLDER ",0,50,WHITE,BLACK,3,3); 
+delay_ms(1000); 
+LCD_FillScreen(WHITE);   
   
-           draw_2bit_image (0,5,32,32,BLUE,WHITE,solder_img);
-           LCD_DrawLine(0,40,175,40,BLACK);
-           draw_2bit_image (0,45,32,32,BLUE,WHITE,hotair_img);
-           LCD_DrawLine(0,80,175,80,BLACK);
-           draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);  
-           LCD_DrawLine(0,120,175,120,BLACK); 
-           LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);    
+draw_2bit_image (0,5,32,32,BLUE,WHITE,solder_img);
+LCD_DrawLine(0,40,175,40,BLACK);
+draw_2bit_image (0,45,32,32,BLUE,WHITE,hotair_img);
+LCD_DrawLine(0,80,175,80,BLACK);
+draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);  
+LCD_DrawLine(0,120,175,120,BLACK); 
+LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);    
            
-           
-           
-           set_sold_cur_temp(480); 
-            set_sold_temp(480);         
+set_sold_cur_temp(480); 
+set_sold_temp(480);         
             
-           set_air_cur_temp(480); 
-            set_air_temp(480);  
-             set_fan(5);
+set_air_cur_temp(480); 
+set_air_temp(480);  
+ set_fan(5);    
+#asm("sei")
 while (1)
 
-      {
+{
       // Place your code here   
-       set_sold_temp(read_adc(6));   
-        set_sold_cur_temp(read_adc(2));   
-        delay_ms(300);
-      }
+    get_all_input();
+    set_fan(fan_set);  
+    set_sold_cur_temp(solder_set); 
+    set_sold_temp(solder_cur);         
+    set_air_cur_temp(air_set); 
+    set_air_temp(air_cur); 
+    delay_ms(300);
+}
 }
 
 
