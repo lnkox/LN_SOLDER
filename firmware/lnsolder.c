@@ -62,6 +62,8 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 #define air_but  PINC.4
 #define air_ger  PINC.5
 
+#define sold_power OCR1BL
+
 #include <mega8.h>
 
 #include <delay.h>
@@ -71,12 +73,24 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
  
 
 unsigned int read_adc(unsigned char adc_input);
+void process_butt(void);
+void process_sys(void); 
 
 int solder_cur=0;
 int air_cur=0;
 int solder_set=0;
 int air_set=0;
 int fan_set=0;
+
+bit solder_on=0;
+bit air_on=0;
+
+
+bit solder_heat=0;
+bit air_head=0;
+
+char sys_tmr=0;
+bit old_but_sold=0,old_but_air=0;
 
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
@@ -114,9 +128,8 @@ void set_sold_temp(int temp)
     char buf[1];
     sprintf( buf,"%i  ",temp );  
     buf[3]=0;
-    LCD_Puts(buf,120,10,RED,WHITE,3,3);
+    LCD_Puts(buf,122,10,RED,WHITE,3,3);
 }
-
 void set_air_cur_temp(int temp)
 {
     char buf[5];
@@ -130,7 +143,7 @@ void set_air_temp(int temp)
     char buf[5];
     sprintf( buf,"%i  ",temp);  
     buf[3]=0;
-    LCD_Puts(buf,120,50,RED,WHITE,3,3);
+    LCD_Puts(buf,122,50,RED,WHITE,3,3);
 }
 void set_fan(int fan)
 {
@@ -141,7 +154,8 @@ void set_fan(int fan)
 }
 void get_all_input(void)
 {
-    solder_cur= map(read_adc(solder_TC), 0, 750, 0, 480);
+    solder_cur= map(read_adc(solder_TC), 0, 1023, 0, 480);
+    //solder_cur=read_adc(solder_TC)/10;
     air_cur= map(read_adc(air_TC), 0, 750, 0, 480);
     solder_set= map(read_adc(solder_RR), 0, 1023, 0, 480);
     air_set= map(read_adc(air_RR), 0, 1023, 0, 480);
@@ -151,24 +165,59 @@ void get_all_input(void)
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 {
 // Place your code here
-
+    sys_tmr++;
+    if (sys_tmr==6) 
+    {
+        sys_tmr=0;
+        process_butt();    
+         process_sys();
+    }
+    
 }
 
+void process_butt(void)
+{
+    if (old_but_sold==1 && solder_but==0) { solder_on=!solder_on;} 
+    if (old_but_air==1 && air_but==0) { air_on=!air_on;}  
+    if (air_ger==0) {} 
+    old_but_sold=solder_but;
+    old_but_air=air_but;
+}
+void process_sys(void)
+{
+    if (solder_on==1)
+    {
+        if (solder_set-solder_cur>5) sold_power=60; 
+        if (solder_set-solder_cur>10) sold_power=100; 
+        if (solder_set-solder_cur>20) sold_power=160; 
+        if (solder_set-solder_cur>40) sold_power=200; 
+        if (solder_set<solder_cur) sold_power=0;       
+    }
+    else
+    {
+       sold_power=0;
+    }
+    
+     
+    
+     
+    
+}
 // Voltage Reference: AREF pin
 #define ADC_VREF_TYPE ((0<<REFS1) | (0<<REFS0) | (0<<ADLAR))
 
 // Read the AD conversion result
 unsigned int read_adc(unsigned char adc_input)
 {
-ADMUX=adc_input | ADC_VREF_TYPE;
-// Delay needed for the stabilization of the ADC input voltage
-delay_us(10);
-// Start the AD conversion
-ADCSRA|=(1<<ADSC);
-// Wait for the AD conversion to complete
-while ((ADCSRA & (1<<ADIF))==0);
-ADCSRA|=(1<<ADIF);
-return ADCW;
+    ADMUX=adc_input | ADC_VREF_TYPE;
+    // Delay needed for the stabilization of the ADC input voltage
+    delay_us(10);
+    // Start the AD conversion
+    ADCSRA|=(1<<ADSC);
+    // Wait for the AD conversion to complete
+    while ((ADCSRA & (1<<ADIF))==0);
+    ADCSRA|=(1<<ADIF);
+    return ADCW;
 }
 
 
@@ -197,27 +246,28 @@ PORTD=(0<<PORTD7) | (0<<PORTD6) | (0<<PORTD5) | (0<<PORTD4) | (0<<PORTD3) | (0<<
 
 // Timer/Counter 0 initialization
 // Clock source: System Clock
-// Clock value: 0,977 kHz
+// Clock value: 7,813 kHz
 TCCR0=(1<<CS02) | (0<<CS01) | (1<<CS00);
 TCNT0=0x00;
 
 // Timer/Counter 1 initialization
 // Clock source: System Clock
-// Clock value: 1000,000 kHz
-// Mode: Ph. correct PWM top=0x03FF
+// Clock value: 7,813 kHz
+// Mode: Ph. correct PWM top=0x00FF
 // OC1A output: Inverted PWM
 // OC1B output: Inverted PWM
 // Noise Canceler: Off
 // Input Capture on Falling Edge
-// Timer Period: 2,046 ms
+// Timer Period: 65,28 ms
 // Output Pulse(s):
-// OC1A Period: 2,046 ms Width: 2,046 ms// OC1B Period: 2,046 ms Width: 2,046 ms
+// OC1A Period: 65,28 ms Width: 65,28 ms
+// OC1B Period: 65,28 ms Width: 65,28 ms
 // Timer1 Overflow Interrupt: Off
 // Input Capture Interrupt: Off
 // Compare A Match Interrupt: Off
 // Compare B Match Interrupt: Off
-TCCR1A=(1<<COM1A1) | (1<<COM1A0) | (1<<COM1B1) | (1<<COM1B0) | (1<<WGM11) | (1<<WGM10);
-TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (0<<CS12) | (0<<CS11) | (1<<CS10);
+TCCR1A=(1<<COM1A1) | (1<<COM1A0) | (1<<COM1B1) | (1<<COM1B0) | (0<<WGM11) | (1<<WGM10);
+TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
 TCNT1H=0x00;
 TCNT1L=0x00;
 ICR1H=0x00;
@@ -295,26 +345,38 @@ LCD_DrawLine(0,80,175,80,BLACK);
 draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);  
 LCD_DrawLine(0,120,175,120,BLACK); 
 LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);    
-           
-set_sold_cur_temp(480); 
-set_sold_temp(480);         
-            
-set_air_cur_temp(480); 
-set_air_temp(480);  
- set_fan(5);    
+  
 #asm("sei")
 while (1)
 
 {
-      // Place your code here   
+      // Place your code here       
     get_all_input();
-    set_fan(fan_set);  
-    set_sold_cur_temp(solder_set); 
-    set_sold_temp(solder_cur);         
-    set_air_cur_temp(air_set); 
-    set_air_temp(air_cur); 
-    delay_ms(300);
+   //   set_fan(fan_set); 
+       set_fan(sold_power/2.55); 
+    if (solder_on==1)
+    {  
+        set_sold_cur_temp(solder_set); 
+        set_sold_temp(solder_cur);  
+    }
+    else
+    {
+       LCD_Puts("OFF    ",50,10,BLACK,WHITE,3,3);
+    }   
+    if (air_on==1)
+    {    
+        set_air_cur_temp(air_set); 
+        set_air_temp(solder_but);    
+    }
+    else
+    {
+       LCD_Puts("OFF    ",50,50,BLACK,WHITE,3,3);
+    }     
+    
+    
 }
 }
 
-
+//solder_but
+// air_but
+// air_ger 
