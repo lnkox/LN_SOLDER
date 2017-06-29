@@ -56,13 +56,16 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 #define solder_TC 6
 #define air_TC 7
 #define solder_RR 0
-#define air_RR 1
-#define fan_RR 2
+#define air_RR 2
+#define fan_RR 1
 #define solder_but PINC.3
-#define air_but  PINC.4
+#define solde_led  PORTC.4
 #define air_ger  PINC.5
 
+#define air_heater  PORTB.0
+
 #define sold_power OCR1BL
+#define fan_power OCR1AL
 
 #include <mega8.h>
 
@@ -86,11 +89,8 @@ bit solder_on=0;
 bit air_on=0;
 
 
-bit solder_heat=0;
-bit air_head=0;
-
 char sys_tmr=0;
-bit old_but_sold=0,old_but_air=0;
+bit old_but_sold=0;
 
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
@@ -148,19 +148,31 @@ void set_air_temp(int temp)
 void set_fan(int fan)
 {
     char buf[5];
+    if (fan>4)
+    {
+        fan_power= map(fan, 1, 100, 80, 255);
+    }  
+    else
+    {
+         fan_power=0;
+    }
+
     sprintf( buf,"%i%%  ",fan );
     buf[4]=0; 
     LCD_Puts(buf,50,90,BLACK,WHITE,3,3);
+
 }
 void get_all_input(void)
 {
     solder_cur= map(read_adc(solder_TC), 0, 1023, 0, 480);
     //solder_cur=read_adc(solder_TC)/10;
-    air_cur= map(read_adc(air_TC), 0, 750, 0, 480);
+    air_cur= map(read_adc(air_TC), 0, 1023, 0, 480);
     solder_set= map(read_adc(solder_RR), 0, 1023, 0, 480);
     air_set= map(read_adc(air_RR), 0, 1023, 0, 480);
-    fan_set= map(read_adc(fan_RR), 0, 1023, 0, 100);;
+    fan_set= map(read_adc(fan_RR), 0, 1023, 0, 100);
+    
 }
+
 // Timer 0 overflow interrupt service routine
 interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 {
@@ -177,11 +189,14 @@ interrupt [TIM0_OVF] void timer0_ovf_isr(void)
 
 void process_butt(void)
 {
-    if (old_but_sold==1 && solder_but==0) { solder_on=!solder_on;} 
-    if (old_but_air==1 && air_but==0) { air_on=!air_on;}  
-    if (air_ger==0) {} 
+
+    if (old_but_sold==1 && solder_but==0)
+    {
+        solder_on=!solder_on;
+        solde_led=solder_on;   
+    } 
+    air_on=air_ger;  
     old_but_sold=solder_but;
-    old_but_air=air_but;
 }
 void process_sys(void)
 {
@@ -197,8 +212,20 @@ void process_sys(void)
     {
        sold_power=0;
     }
-    
-     
+   
+    if (air_on==1)
+    {
+        set_fan(fan_set);
+        if (air_set>air_cur) 
+        {
+            air_heater=1; 
+        }
+        else
+        {
+            air_heater=0;
+        }        
+    }
+ 
     
      
     
@@ -234,7 +261,7 @@ PORTB=(0<<PORTB7) | (0<<PORTB6) | (0<<PORTB5) | (0<<PORTB4) | (0<<PORTB3) | (0<<
 
 // Port C initialization
 // Function: Bit6=In Bit5=In Bit4=In Bit3=In Bit2=In Bit1=In Bit0=In 
-DDRC=(0<<DDC6) | (0<<DDC5) | (0<<DDC4) | (0<<DDC3) | (0<<DDC2) | (0<<DDC1) | (0<<DDC0);
+DDRC=(0<<DDC6) | (0<<DDC5) | (1<<DDC4) | (0<<DDC3) | (0<<DDC2) | (0<<DDC1) | (0<<DDC0);
 // State: Bit6=T Bit5=T Bit4=T Bit3=T Bit2=T Bit1=T Bit0=T 
 PORTC=(0<<PORTC6) | (0<<PORTC5) | (0<<PORTC4) | (0<<PORTC3) | (0<<PORTC2) | (0<<PORTC1) | (0<<PORTC0);
 
@@ -331,6 +358,7 @@ SPCR=(0<<SPIE) | (0<<SPE) | (0<<DORD) | (0<<MSTR) | (0<<CPOL) | (0<<CPHA) | (0<<
 TWCR=(0<<TWEA) | (0<<TWSTA) | (0<<TWSTO) | (0<<TWEN) | (0<<TWIE);
 
 // Global enable interrupts
+fan_power=0;
 
 LCD_init(); 
 SetRotation(90);  
@@ -352,26 +380,52 @@ while (1)
 {
       // Place your code here       
     get_all_input();
-   //   set_fan(fan_set); 
-       set_fan(sold_power/2.55); 
     if (solder_on==1)
     {  
         set_sold_cur_temp(solder_set); 
-        set_sold_temp(solder_cur);  
+        set_sold_temp(solder_cur);
+        if (solder_set>solder_cur) 
+        {
+           LCD_Puts("HEAT",15,30,RED,WHITE,1,1);
+        }
+        else
+        {
+            LCD_Puts("    ",15,30,RED,WHITE,1,1);    
+        }  
     }
     else
     {
-       LCD_Puts("OFF    ",50,10,BLACK,WHITE,3,3);
+       LCD_Puts("OFF    ",50,10,BLACK,WHITE,3,3); 
+       LCD_Puts("    ",15,30,RED,WHITE,1,1);  
     }   
     if (air_on==1)
     {    
         set_air_cur_temp(air_set); 
-        set_air_temp(solder_but);    
+        set_air_temp(air_cur);
+        if (air_set>air_cur) 
+        {
+            LCD_Puts("HEAT",15,70,RED,WHITE,1,1);
+        }
+        else
+        {
+            LCD_Puts("    ",15,70,RED,WHITE,1,1); 
+        }    
     }
     else
     {
+        LCD_Puts("    ",15,70,RED,WHITE,1,1); 
+        if (air_cur>100)
+        {
+            set_fan(100);
+        }
+        else
+        {
+            set_fan(0); 
+        }
+       
        LCD_Puts("OFF    ",50,50,BLACK,WHITE,3,3);
-    }     
+    } 
+  
     
     
 }
