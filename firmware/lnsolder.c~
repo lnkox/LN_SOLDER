@@ -67,13 +67,18 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 #define sold_power OCR1BL
 #define fan_power OCR1AL
 
+
+#define K_P     3
+#define K_I     0.05
+#define K_D     0.2
+
 #include <mega8.h>
 
 #include <delay.h>
 #include <stdlib.h>
 #include <LPH9157-2.h>
 #include <stdio.h>
- 
+#include "pidlib.h" 
 
 unsigned int read_adc(unsigned char adc_input);
 void process_butt(void);
@@ -85,12 +90,20 @@ int solder_set=0;
 int air_set=0;
 int fan_set=0;
 
+int solder_power=0;
+
 bit solder_on=0;
 bit air_on=0;
 
+struct PID_DATA pidData1;
 
 char sys_tmr=0;
 bit old_but_sold=0;
+
+void Init_pid(void) // ²í³ö³àë³çàö³ÿ Ï²Ä
+{
+    pid_Init(K_P * SCALING_FACTOR, K_I * SCALING_FACTOR , K_D * SCALING_FACTOR , &pidData1);
+}
 
 long map(long x, long in_min, long in_max, long out_min, long out_max)
 {
@@ -202,29 +215,36 @@ void process_sys(void)
 {
     if (solder_on==1)
     {
-        if (solder_set-solder_cur>5) sold_power=60; 
-        if (solder_set-solder_cur>10) sold_power=100; 
-        if (solder_set-solder_cur>20) sold_power=160; 
-        if (solder_set-solder_cur>40) sold_power=200; 
-        if (solder_set<solder_cur) sold_power=0;       
+//        if (solder_set-solder_cur>5) sold_power=60; 
+//        if (solder_set-solder_cur>10) sold_power=100; 
+//        if (solder_set-solder_cur>20) sold_power=160; 
+//        if (solder_set-solder_cur>40) sold_power=200; 
+//        if (solder_set<solder_cur) sold_power=0; 
+          solder_power = pid_Controller( solder_set,solder_cur, &pidData1); 
+          set_air_temp(solder_power);
+          if (solder_power>255) { solder_power=255; }   
+          if (solder_power>350) { pid_Reset_Integrator(&pidData1); }  
+          if (solder_power<0) {solder_power=0;  pid_Reset_Integrator(&pidData1);}      
+          sold_power=solder_power;
     }
     else
     {
        sold_power=0;
+       pid_Reset_Integrator(&pidData1);
     }
-   
+    
+    set_air_cur_temp(sold_power);
+    
     if (air_on==1)
     {
         set_fan(fan_set);
         if (air_set>air_cur) 
         {
             air_heater=1; 
-            LCD_Puts("HEAT",15,70,RED,WHITE,1,1);
         }
         else
         {
             air_heater=0;
-            LCD_Puts("    ",15,70,RED,WHITE,1,1); 
         }        
     }
  
@@ -282,25 +302,33 @@ TCNT0=0x00;
 // Timer/Counter 1 initialization
 // Clock source: System Clock
 // Clock value: 7,813 kHz
-// Mode: Ph. correct PWM top=0x00FF
-// OC1A output: Inverted PWM
-// OC1B output: Inverted PWM
+// Mode: Fast PWM top=0x00FF
+// OC1A output: Non-Inverted PWM
+// OC1B output: Non-Inverted PWM
 // Noise Canceler: Off
 // Input Capture on Falling Edge
-// Timer Period: 65,28 ms
+// Timer Period: 32,768 ms
 // Output Pulse(s):
-// OC1A Period: 65,28 ms Width: 65,28 ms
-// OC1B Period: 65,28 ms Width: 65,28 ms
+// OC1A Period: 32,768 ms Width: 0 us
+// OC1B Period: 32,768 ms Width: 0 us
 // Timer1 Overflow Interrupt: Off
 // Input Capture Interrupt: Off
 // Compare A Match Interrupt: Off
 // Compare B Match Interrupt: Off
-TCCR1A=(1<<COM1A1) | (1<<COM1A0) | (1<<COM1B1) | (1<<COM1B0) | (0<<WGM11) | (1<<WGM10);
-TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (0<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
+TCCR1A=(1<<COM1A1) | (0<<COM1A0) | (1<<COM1B1) | (0<<COM1B0) | (0<<WGM11) | (1<<WGM10);
+TCCR1B=(0<<ICNC1) | (0<<ICES1) | (0<<WGM13) | (1<<WGM12) | (1<<CS12) | (0<<CS11) | (1<<CS10);
 TCNT1H=0x00;
 TCNT1L=0x00;
 ICR1H=0x00;
 ICR1L=0x00;
+
+
+
+
+
+
+
+
 OCR1AH=0x00;
 OCR1AL=0x00;
 OCR1BH=0x00;
@@ -375,7 +403,7 @@ LCD_DrawLine(0,80,175,80,BLACK);
 draw_2bit_image (2,85,32,32,BLUE,WHITE,fan_img);  
 LCD_DrawLine(0,120,175,120,BLACK); 
 LCD_Puts("Powered by LnKOx & RadioVetal",0,123,SKY,WHITE,1,1);    
-  
+Init_pid();  
 #asm("sei")
 while (1)
 
@@ -385,8 +413,9 @@ while (1)
     if (solder_on==1)
     {  
         set_sold_cur_temp(solder_set); 
+        //set_sold_temp(solder_cur); 
         set_sold_temp(solder_cur);
-        if (solder_set>solder_cur) 
+        if (solder_power>3) 
         {
            LCD_Puts("HEAT",15,30,RED,WHITE,1,1);
         }
@@ -402,8 +431,16 @@ while (1)
     }   
     if (air_on==1)
     {    
-        set_air_cur_temp(air_set); 
-        set_air_temp(air_cur);  
+       // set_air_cur_temp(air_set); 
+        // set_air_temp(air_cur);
+        if (air_set>air_cur) 
+        {
+            LCD_Puts("HEAT",15,70,RED,WHITE,1,1);
+        }
+        else
+        {
+            LCD_Puts("    ",15,70,RED,WHITE,1,1); 
+        }    
     }
     else
     {
