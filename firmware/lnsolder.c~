@@ -68,9 +68,9 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 #define fan_power OCR1AL
 
 
-#define K_P     3
-#define K_I     0.05
-#define K_D     0.2
+#define K_P     2
+#define K_I     0.02
+#define K_D     0.05
 
 #include <mega8.h>
 
@@ -78,6 +78,9 @@ flash unsigned char hotair_img[128] = { /* 0X00,0X01,0X20,0X00,0X20,0X00, */
 #include <stdlib.h>
 #include <LPH9157-2.h>
 #include <stdio.h>
+ 
+void set_air_cur_temp(int temp);
+
 #include "pidlib.h" 
 
 unsigned int read_adc(unsigned char adc_input);
@@ -221,9 +224,7 @@ void process_sys(void)
 //        if (solder_set-solder_cur>40) sold_power=200; 
 //        if (solder_set<solder_cur) sold_power=0; 
           solder_power = pid_Controller( solder_set,solder_cur, &pidData1); 
-          set_air_temp(solder_power);
           if (solder_power>255) { solder_power=255; }   
-          if (solder_power>350) { pid_Reset_Integrator(&pidData1); }  
           if (solder_power<0) {solder_power=0;  pid_Reset_Integrator(&pidData1);}      
           sold_power=solder_power;
     }
@@ -233,7 +234,7 @@ void process_sys(void)
        pid_Reset_Integrator(&pidData1);
     }
     
-    set_air_cur_temp(sold_power);
+    
     
     if (air_on==1)
     {
@@ -428,11 +429,13 @@ while (1)
     {
        LCD_Puts("OFF    ",50,10,BLACK,WHITE,3,3); 
        LCD_Puts("    ",15,30,RED,WHITE,1,1);  
-    }   
+    } 
+            set_air_cur_temp(air_set); 
+        set_air_temp(air_cur);  
     if (air_on==1)
     {    
-       // set_air_cur_temp(air_set); 
-        // set_air_temp(air_cur);
+        //set_air_cur_temp(air_set); 
+        //set_air_temp(air_cur);
         if (air_set>air_cur) 
         {
             LCD_Puts("HEAT",15,70,RED,WHITE,1,1);
@@ -454,7 +457,7 @@ while (1)
             set_fan(0); 
         }
        
-       LCD_Puts("OFF    ",50,50,BLACK,WHITE,3,3);
+      // LCD_Puts("OFF    ",50,50,BLACK,WHITE,3,3);
     } 
   
     

@@ -63,6 +63,7 @@ signed int pid_Controller(signed int setPoint, signed int processValue, struct P
   }
   else{
     pid_st->sumError = temp; 
+    if (pid_st->sumError>9500) pid_st->sumError=9500;
     i_term = pid_st->I_Factor * pid_st->sumError;
   }
 
@@ -70,6 +71,7 @@ signed int pid_Controller(signed int setPoint, signed int processValue, struct P
   d_term = pid_st->D_Factor * (pid_st->lastProcessValue - processValue);
 
   pid_st->lastProcessValue = processValue;
+  set_air_cur_temp(i_term);
   ret = (p_term + i_term + d_term) / SCALING_FACTOR;
   if(ret > MAX_INT){
     ret = MAX_INT;
